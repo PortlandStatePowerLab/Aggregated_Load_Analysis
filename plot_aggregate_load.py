@@ -27,7 +27,7 @@ import numpy as np
 # -----------------------------------------------------------------------------
 
 # Number of HPWH units to scale results to
-N_units = 1
+N_units = 100_000
 
 # Default units (will be adjusted dynamically)
 units = "kW"
@@ -52,6 +52,71 @@ def power_units_scale(P_max):
     print(P_max, units, base)
     return units, base
 
+
+def kwh_from_power_csv(
+    csv_path: str,
+    dt_minutes: float = 15.0,
+):
+    """
+    Reads a CSV with columns:
+      [time, P_mean_kW, P_95, P_5]  (time in 15-min increments, powers in kW)
+    Returns a dict of energies in kWh for each power column.
+    """
+    df = pd.read_csv(csv_path)
+
+    # Grab columns by position (matches your description)
+    p_mean = pd.to_numeric(df.iloc[:, 1], errors="coerce")
+    p_95   = pd.to_numeric(df.iloc[:, 2], errors="coerce")
+    p_5    = pd.to_numeric(df.iloc[:, 3], errors="coerce")
+
+    dt_hr = dt_minutes / 60.0
+
+    energies = {
+        "rows": len(df),
+        "dt_hr": dt_hr,
+        "E_mean_kWh": p_mean.sum() * dt_hr,
+        "E_95_kWh":   p_95.sum() * dt_hr,
+        "E_5_kWh":    p_5.sum() * dt_hr,
+    }
+
+    return energies
+
+def plot_segment_energy(df):
+    plt.figure(figsize=(14,6))
+
+    plt.bar(df.iloc[:, 0], df["E_mean_kWh"])
+
+    # Reduce x clutter (show every hour)
+    idx = range(0, len(df), 4)
+    plt.xticks(
+        [df.iloc[i, 0] for i in idx],
+        rotation=45
+    )
+
+    plt.xlabel("Time")
+    plt.ylabel("Energy per 15-min (kWh)")
+    plt.title("Energy Consumption per 15-Minute Interval")
+    plt.grid(axis="y")
+
+    plt.tight_layout()
+
+
+def compute_segment_energy(csv_path, output_csv="segment_energy_baseline.csv"):
+    df = pd.read_csv(csv_path)
+
+    dt_hr = 0.25  # 15 minutes
+
+    # Compute kWh per segment
+    df["E_mean_kWh"] = pd.to_numeric(df.iloc[:, 1], errors="coerce") * dt_hr
+    df["E_95_kWh"]   = pd.to_numeric(df.iloc[:, 2], errors="coerce") * dt_hr
+    df["E_5_kWh"]    = pd.to_numeric(df.iloc[:, 3], errors="coerce") * dt_hr
+
+    # Save CSV
+    df.to_csv(output_csv, index=False)
+
+    return df
+
+df_energy = compute_segment_energy("P_mean_baseline_10000.csv")
 # -----------------------------------------------------------------------------
 # FUNCTION: Format integers with commas (for titles)
 # -----------------------------------------------------------------------------
@@ -169,6 +234,13 @@ print("Area baseline vs control", E_base_kWh, E_ctrl_kWh, E_base_kWh - E_ctrl_kW
 area_diff_kWh = (P_mean - P_mean_c).abs().sum() * 0.25
 print("area between curves", area_diff_kWh)
 
+
+top5 = df_energy.sort_values("E_mean_kWh", ascending=False).head(5)
+
+print(top5[["time", "E_mean_kWh"]])
+
+total_energy = df_energy["E_mean_kWh"].sum()
+print(f"Total Daily Energy = {total_energy:.2f} kWh")
 #units, base = power_units_scale(P_mean_max)
 
 """
@@ -376,10 +448,10 @@ plt.xticks(ticks=range(0, len(time), N),
            labels=time.iloc[::N],
            rotation=45)
 
-
+plot_segment_energy(df_energy)
 # smooth curve across full day
 # Plot
-x_fit = np.linspace(0, 23.75, 500)
+"""x_fit = np.linspace(0, 23.75, 500)
 plt.figure(figsize=(12, 6))
 plt.plot(x, y, label="Data", linewidth=2)
 plt.plot(x_fit, f(x_fit), label=f"Fourier fit (N={N})", linewidth=2)
@@ -390,7 +462,7 @@ plt.xticks(x[tick_idx], time.iloc[tick_idx], rotation=45)
 plt.xlabel("Time")
 plt.ylabel("Power (kW)")
 plt.grid(True)
-plt.legend()
+plt.legend()"""
 plt.tight_layout()
 
 
