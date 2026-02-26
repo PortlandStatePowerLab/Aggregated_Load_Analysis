@@ -86,7 +86,7 @@ Notes: Includes helper functions for kWh computation and dynamic engineering uni
 
 ### png_to_word.py
 
-Purpose: Build a Word doc that interleaves baseline/control PNG plots in a grid layout, page by page.
+**Purpose:** Build a Word doc that interleaves baseline/control PNG plots in a grid layout, page by page.
 Inputs: Two folders of PNGs (./baseline_images, ./control_images by default).
 Outputs: A Word document (default: baseline_control_interleaved.docx).
 Notes: Uses python-docx, sets 0.5" margins, and paginates after each filled grid.
@@ -96,7 +96,10 @@ Notes: Uses python-docx, sets 0.5" margins, and paginates after each filled grid
 * Install Python WSL or Ubuntu
 * Install Python 3.10+ (recommended)
 * Verify installation: python3 --version (WSL) or python --version (Windows)
-* Create a project folder and place the scripts inside it
+* Clone this repository
+* Open repository in your preferred code builder program. (This was built in VS Code)_
+* In the terminal, cd into the Aggregate_Load_Analysis folder
+Optional:
 * Create a virtual environment and install packages
 * Create venv: python3 -m venv .venv
 
