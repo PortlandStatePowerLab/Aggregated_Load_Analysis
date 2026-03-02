@@ -236,28 +236,56 @@ width = 0.8  # width of each bar
 #E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
 
 
-# bars with a little gap
-bar_width = 0.9
+bar_width = 0.75          # leaves a little whitespace between bars
+cap_frac  = 0.80          # cap width relative to bar width
+cap_half  = (bar_width * cap_frac) / 2
 
-# asymmetric error: up to 97.5, down to 2.5
-yerr = np.vstack([(E_mean - E_2), (E_97 - E_mean)])
+# Ensure lower/upper are ordered (helps if any weird sign/ordering occurs)
+lower = np.minimum(E_2, E_97)
+upper = np.maximum(E_2, E_97)
 
 plt.figure(figsize=(14, 6))
 
-plt.bar(x, E_mean, width=bar_width, label="Mean", alpha=0.9)
-
-# caps only; vertical line is still there by default but very thin.
-plt.errorbar(
+# 1) Mean bars
+plt.bar(
     x, E_mean,
-    yerr=yerr,
-    fmt="none",
-    capsize=4,        # cap length
-    elinewidth=1.2,   # vertical line thickness
-    label="2.5th / 97.5th",
+    width=bar_width,
+    color="royalblue",
+    alpha=0.9,
+    label="Mean",
+    zorder=2
+)
+
+# 2) Per-interval shaded band (NOT connected; one rectangle per bar)
+plt.bar(
+    x, upper - lower,
+    bottom=lower,
+    width=bar_width,
+    color="#E8D8B8",   # soft beige
+    alpha=0.55,
+    label="95% Band",
+    zorder=1
+)
+
+# 3) Per-interval caps (NOT connected)
+x_left  = x - cap_half
+x_right = x + cap_half
+
+plt.hlines(
+    upper, x_left, x_right,
+    color="green",
+    linewidth=2.5,
+    label="97.5th",
     zorder=3
 )
 
-
+plt.hlines(
+    lower, x_left, x_right,
+    color="orange",
+    linewidth=2.5,
+    label="2.5th",
+    zorder=3
+)
 #plt.bar(x - width, E_2, width=width, color="lightgreen")
 #plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
 #plt.bar(x - width, E_97, bottom=E_mean, color="orange")
