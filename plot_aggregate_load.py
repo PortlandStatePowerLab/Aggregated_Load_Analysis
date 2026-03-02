@@ -238,21 +238,49 @@ E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
 plt.figure(figsize=(14, 6))
 
 # Mean bars
-plt.bar(x, E_mean, width=1.0, alpha=0.9, label="Mean", zorder=1)
+mean_bars = plt.bar(
+    x,
+    E_mean,
+    width=1.0,
+    color="royalblue",
+    alpha=0.9,
+    label="Mean",
+    zorder=1
+)
 
-# Shaded CI band
-plt.fill_between(
+# Shaded confidence band
+ci_band = plt.fill_between(
     edges,
     E2_step,
     E97_step,
     step="post",
-    alpha=0.25,
+    color="#E8D8B8",
+    alpha=0.35,
+    label="95% Band",
     zorder=2
 )
 
 # Step lines ON TOP
-plt.step(edges, E97_step, where="post", linewidth=2.5, zorder=3)
-plt.step(edges, E2_step,  where="post", linewidth=2.5, zorder=3)
+# 97.5th step line (GREEN)
+line97, = plt.step(
+    edges,
+    E97_step,
+    where="post",
+    linewidth=2.5,
+    color="green",
+    label="97.5th",
+    zorder=3
+)
+# 2.5th step line (DARK GREEN)
+line2, = plt.step(
+    edges,
+    E2_step,
+    where="post",
+    linewidth=2.5,
+    color="orange",
+    label="2.5th",
+    zorder=3
+)
 
 #plt.bar(x - width, E_2, width=width, color="lightgreen")
 #plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
