@@ -241,7 +241,7 @@ plt.figure(figsize=(14, 6))
 mean_bars = plt.bar(
     x,
     E_mean,
-    width=1.0,
+    width=0.8,
     color="royalblue",
     alpha=0.9,
     label="Mean",
