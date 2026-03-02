@@ -33,7 +33,7 @@ N_units = 1
 
 # Default units (will be adjusted dynamically)
 units = "kW"
-base = 10_000
+base = 1
 
 #file_name = "P_mean_baseline_minus_control_1000.csv"
 
@@ -63,6 +63,7 @@ E_kWh = P_mean * dt_hr
 # ---------------------------------------------------------------------
 # PLOT
 # ---------------------------------------------------------------------
+"""
 x = np.arange(len(time))
 
 plt.figure(figsize=(14,6))
@@ -77,7 +78,7 @@ plt.title("Energy Consumption per 15-Minute Interval (1 Unit)")
 plt.grid(axis="y")
 
 plt.tight_layout()
-
+"""
 
 # ---------------------------------------------------------------------
 # PRINT TOTAL DAILY ENERGY
@@ -207,22 +208,69 @@ print("Area baseline vs control", E_base_kWh, E_ctrl_kWh, E_base_kWh - E_ctrl_kW
 area_diff_kWh = (P_mean - P_mean_c).abs().sum() * 0.25
 print("area between curves", area_diff_kWh)
 
+# Convert to energy if desired (kWh)
+E_mean = (P_mean_adj - P_2_adj) / base / 4
+E_97   = (P_97_adj + P_2_adj) / base / 4
+E_2    = (P_2_adj) / base / 4
+
+# Differences for shading
+upper_diff = E_97 - E_mean
+lower_diff = E_mean - E_2
+
 #time = df_minus.iloc[:, 0]
 #P_mean = pd.to_numeric(df_minus.iloc[:, 1], errors="coerce")
 #ninety_seventh = pd.to_numeric(df_minus.iloc[:, 2], errors="coerce")
+
+
+# -----------------------------------------------------------------------------
+# PLOT: BAR - BASELINE MINUS CONTROLLED
+# -----------------------------------------------------------------------------
 x = np.arange(len(time))
+width = 0.8  # width of each bar
 
 plt.figure(figsize=(14,6))
-plt.bar(x, P_mean_adj)
-#plt.bar(x, P_2_adj)
-#plt.bar(x, P_97_adj)
+# 1️⃣ Mean bar
+plt.bar(x, E_mean, color="royalblue", label="Mean")
+# 2️⃣ Upper shaded region
+plt.bar(
+    x,
+    upper_diff,
+    bottom=E_mean,
+    color="lightcoral",
+    alpha=0.6,
+    label="Mean → 97.5th"
+)
+# 3️⃣ Lower shaded region
+plt.bar(
+    x,
+    lower_diff,
+    bottom=E_2,
+    color="lightgreen",
+    alpha=0.6,
+    label="2.5th → Mean"
+)
 
-# Show every hour (every 4th label)
-plt.xticks(x[::4], time[::4], rotation=45)
+#plt.bar(x - width, E_2, width=width, color="lightgreen")
+#plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
+#plt.bar(x - width, E_97, bottom=E_mean, color="orange")
+
+#plt.plot(time, E_97, label="97th Percentile", linestyle="--")
+#plt.plot(time, E_2, label="2.5th Percentile", linestyle="--")
+
+# Optional shaded percentile band
+#plt.fill_between(time, E_2, E_97, alpha=0.2, label="2.5–97.5% Range")
+
+#plt.bar(x,         E_97,   width=width, label="97.5th", color="red")
+#plt.bar(x + width, E_2,    width=width, label="2.5th", color="green")
+
+# Reduce x clutter (hourly labels)
+plt.xticks(x[::4], time.iloc[::4], rotation=45)
+
 
 plt.xlabel("Time")
-plt.ylabel("Power (kW)")
-plt.title("Aggregate Power Difference for 1 Unit (Baseline - Control)")
+plt.ylabel(f"Energy (kWh)")
+plt.title("Baseline Minus Controlled Energy by Time Interval With Confidence Envelope (10,000 Units)")
+plt.legend()
 plt.grid(axis="y")
 
 plt.tight_layout()
@@ -326,7 +374,7 @@ units, base = power_units_scale(P_mean_min_adj2 if abs(P_mean_max_adj2) < abs(P_
 # -----------------------------------------------------------------------------
 # PLOT: CONTROLLED MINUS BASELINE
 # -----------------------------------------------------------------------------
-
+"""
 
 # Create plot
 plt.figure(figsize=(12, 6))
@@ -358,7 +406,7 @@ N = 4  # every hour if 15-min increments
 plt.xticks(ticks=range(0, len(time), N),
            labels=time.iloc[::N],
            rotation=45)
-
+"""
 # -----------------------------------------------------------------------------
 # PLOT: BASELINE MINUS CONTROLLED
 # -----------------------------------------------------------------------------
