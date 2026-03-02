@@ -237,15 +237,22 @@ E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
 
 plt.figure(figsize=(14, 6))
 
-# Mean as bars
-plt.bar(x, E_mean, width=1.0, align="center", label="Mean", alpha=0.9)
+# Mean bars
+plt.bar(x, E_mean, width=1.0, alpha=0.9, label="Mean", zorder=1)
 
-# Shade the CI band (bar-aligned, not smooth)
-plt.fill_between(edges, E2_step, E97_step, step="post", alpha=0.25, label="95% Band")
+# Shaded CI band
+plt.fill_between(
+    edges,
+    E2_step,
+    E97_step,
+    step="post",
+    alpha=0.25,
+    zorder=2
+)
 
-# Step "lines" that match the bars (not a regular line plot)
-plt.step(edges, E97_step, where="post", color="lightgreen", linewidth=2, label="97.5th (step)")
-plt.step(edges, E2_step,  where="post", linewidth=2, label="2.5th (step)")
+# Step lines ON TOP
+plt.step(edges, E97_step, where="post", linewidth=2.5, zorder=3)
+plt.step(edges, E2_step,  where="post", linewidth=2.5, zorder=3)
 
 #plt.bar(x - width, E_2, width=width, color="lightgreen")
 #plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
@@ -266,7 +273,7 @@ plt.xticks(x[::4], time.iloc[::4], rotation=45)
 
 plt.xlabel("Time")
 plt.ylabel(f"Energy (kWh)")
-plt.title("Baseline Minus Controlled Energy by Time Interval With Confidence Envelope (10,000 Units)")
+plt.title("Baseline Minus Controlled Energy by Time Interval With Confidence Envelope (1 Unit)")
 plt.legend()
 plt.grid(axis="y")
 
