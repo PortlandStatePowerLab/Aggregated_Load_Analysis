@@ -209,8 +209,8 @@ area_diff_kWh = (P_mean - P_mean_c).abs().sum() * 0.25
 print("area between curves", area_diff_kWh)
 
 # Convert to energy if desired (kWh)
-E_mean = (P_mean_adj - P_2_adj) / base / 4
-E_97   = (P_97_adj + P_2_adj) / base / 4
+E_mean = P_mean_adj/ base / 4
+E_97   = P_97_adj / base / 4
 E_2    = (P_2_adj) / base / 4
 
 # Differences for shading
@@ -228,27 +228,24 @@ lower_diff = E_mean - E_2
 x = np.arange(len(time))
 width = 0.8  # width of each bar
 
-plt.figure(figsize=(14,6))
-# 1️⃣ Mean bar
-plt.bar(x, E_mean, color="royalblue", label="Mean")
-# 2️⃣ Upper shaded region
-plt.bar(
-    x,
-    upper_diff,
-    bottom=E_mean,
-    color="lightcoral",
-    alpha=0.6,
-    label="Mean → 97.5th"
-)
-# 3️⃣ Lower shaded region
-plt.bar(
-    x,
-    lower_diff,
-    bottom=E_2,
-    color="lightgreen",
-    alpha=0.6,
-    label="2.5th → Mean"
-)
+# Build "edges" so the step lines align with bar edges
+edges = np.arange(len(time) + 1) - 0.5
+
+# For step plotting, we need one extra value at the end
+E97_step = np.r_[E_97.to_numpy(), E_97.to_numpy()[-1]]
+E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
+
+plt.figure(figsize=(14, 6))
+
+# Mean as bars
+plt.bar(x, E_mean, width=1.0, align="center", label="Mean", alpha=0.9)
+
+# Shade the CI band (bar-aligned, not smooth)
+plt.fill_between(edges, E2_step, E97_step, step="post", alpha=0.25, label="95% Band")
+
+# Step "lines" that match the bars (not a regular line plot)
+plt.step(edges, E97_step, where="post", color="lightgreen", linewidth=2, label="97.5th (step)")
+plt.step(edges, E2_step,  where="post", linewidth=2, label="2.5th (step)")
 
 #plt.bar(x - width, E_2, width=width, color="lightgreen")
 #plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
