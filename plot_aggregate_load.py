@@ -229,58 +229,34 @@ x = np.arange(len(time))
 width = 0.8  # width of each bar
 
 # Build "edges" so the step lines align with bar edges
-edges = np.arange(len(time) + 1) - 0.5
+#edges = np.arange(len(time) + 1) - 0.5
 
 # For step plotting, we need one extra value at the end
-E97_step = np.r_[E_97.to_numpy(), E_97.to_numpy()[-1]]
-E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
+#E97_step = np.r_[E_97.to_numpy(), E_97.to_numpy()[-1]]
+#E2_step  = np.r_[E_2.to_numpy(),  E_2.to_numpy()[-1]]
+
+
+# bars with a little gap
+bar_width = 0.9
+
+# asymmetric error: up to 97.5, down to 2.5
+yerr = np.vstack([(E_mean - E_2), (E_97 - E_mean)])
 
 plt.figure(figsize=(14, 6))
 
-# Mean bars
-mean_bars = plt.bar(
-    x,
-    E_mean,
-    width=0.8,
-    color="royalblue",
-    alpha=0.9,
-    label="Mean",
-    zorder=1
-)
+plt.bar(x, E_mean, width=bar_width, label="Mean", alpha=0.9)
 
-# Shaded confidence band
-ci_band = plt.fill_between(
-    edges,
-    E2_step,
-    E97_step,
-    step="post",
-    color="#E8D8B8",
-    alpha=0.35,
-    label="95% Band",
-    zorder=2
-)
-
-# Step lines ON TOP
-# 97.5th step line (GREEN)
-line97, = plt.step(
-    edges,
-    E97_step,
-    where="post",
-    linewidth=2.5,
-    color="green",
-    label="97.5th",
+# caps only; vertical line is still there by default but very thin.
+plt.errorbar(
+    x, E_mean,
+    yerr=yerr,
+    fmt="none",
+    capsize=4,        # cap length
+    elinewidth=1.2,   # vertical line thickness
+    label="2.5th / 97.5th",
     zorder=3
 )
-# 2.5th step line (DARK GREEN)
-line2, = plt.step(
-    edges,
-    E2_step,
-    where="post",
-    linewidth=2.5,
-    color="orange",
-    label="2.5th",
-    zorder=3
-)
+
 
 #plt.bar(x - width, E_2, width=width, color="lightgreen")
 #plt.bar(x - width, E_mean, bottom=E_2, label="Mean", color="blue")
