@@ -58,9 +58,9 @@ def get_stats(input_df):
         '0.975 Quant': input_df.quantile(0.975),
         'Mean': input_df.mean(),
         '0.025 Quant': input_df.quantile(0.025),
-        'Variance' : input_df.var(ddof=0),
-        'Std Dev' : input_df.std(),
-        'Skew' : input_df.skew()
+        #'Variance' : input_df.var(ddof=0),
+        #'Std Dev' : input_df.std(),
+        #'Skew' : input_df.skew()
         }).T  # Transpose to get rows as statistics
     
     return summary_df
@@ -75,9 +75,9 @@ input_file_name  = "/home/sladefox/ochre_working/Ready_data/180111_1_15_NR_Basel
 upper_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_10000_for_baseline.csv"
 mean_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_10000_for_baseline.csv"
 lower_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_10000_for_baseline.csv"
-variance_output_file     = "/home/sladefox/ochre_working/Ready_data/hpwh_var_AL_10000_for_baseline.csv"
-standard_dev_output_file = "/home/sladefox/ochre_working/Ready_data/hpwh_sdev_AL_10000_for_baseline.csv"
-skew_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_skew_AL_10000_for_baseline.csv"
+#variance_output_file     = "/home/sladefox/ochre_working/Ready_data/hpwh_var_AL_10000_for_baseline.csv"
+#standard_dev_output_file = "/home/sladefox/ochre_working/Ready_data/hpwh_sdev_AL_10000_for_baseline.csv"
+#skew_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_skew_AL_10000_for_baseline.csv"
 
 unit_runs = 1000
 MCS_runs = 1000  
@@ -102,9 +102,9 @@ MCS_table = pd.DataFrame(np.nan, index=range(MCS_runs), columns=times)
 upper_quant_df  = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
 mean_df         = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
 lower_quant_df  = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
-variance_df     = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
-std_dev_df      = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
-skew_df         = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
+#variance_df     = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
+#std_dev_df      = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
+#skew_df         = pd.DataFrame(np.nan, index=range(unit_runs), columns=times)
 
 total_iterations = unit_runs
 
@@ -123,17 +123,17 @@ for i, N in enumerate(range(1, unit_runs + 1), start=1):
     upper_quant_df.loc[i]  = stats_df.loc['0.975 Quant']
     mean_df.loc[i]         = stats_df.loc['Mean']
     lower_quant_df.loc[i]  = stats_df.loc['0.025 Quant']
-    variance_df.loc[i]     = stats_df.loc['Variance']
-    std_dev_df.loc[i]      = stats_df.loc['Std Dev']
-    skew_df.loc[i]         = stats_df.loc['Skew']
+    #variance_df.loc[i]     = stats_df.loc['Variance']
+    #std_dev_df.loc[i]      = stats_df.loc['Std Dev']
+    #skew_df.loc[i]         = stats_df.loc['Skew']
 
 # results_df.to_csv(output_file_name, index=True)
 upper_quant_df.to_csv(upper_quant_output_file, index=True)
 mean_df.to_csv(mean_output_file, index=True)
 lower_quant_df.to_csv(lower_quant_output_file, index=True)
-variance_df.to_csv(variance_output_file, index=True)
-std_dev_df.to_csv(standard_dev_output_file, index=True)
-skew_df.to_csv(skew_output_file, index=True)
+#variance_df.to_csv(variance_output_file, index=True)
+#std_dev_df.to_csv(standard_dev_output_file, index=True)
+#skew_df.to_csv(skew_output_file, index=True)
 
 # maximum widths of the 95th CI
 width_df = upper_quant_df - lower_quant_df
