@@ -70,11 +70,11 @@ def get_stats(input_df):
 ############################################################################
 
 # enter in the input and output file names.   
-input_file_name  = "/home/sladefox/ochre_working/Ready_data/180111_1_15_NR_Baseline_ready_data.csv"
+input_file_name  = "/home/sladefox/ochre_working/Ready_data/180111_1_15_NR_Controlled_ready_data.csv"
 
-upper_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_10000_for_baseline.csv"
-mean_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_10000_for_baseline.csv"
-lower_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_10000_for_baseline.csv"
+upper_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_1000_for_controlled.csv"
+mean_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_1000_for_controlled.csv"
+lower_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_1000_for_controlled.csv"
 #variance_output_file     = "/home/sladefox/ochre_working/Ready_data/hpwh_var_AL_10000_for_baseline.csv"
 #standard_dev_output_file = "/home/sladefox/ochre_working/Ready_data/hpwh_sdev_AL_10000_for_baseline.csv"
 #skew_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_skew_AL_10000_for_baseline.csv"

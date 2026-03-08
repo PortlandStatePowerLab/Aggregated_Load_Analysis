@@ -22,14 +22,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 #import helpers
-from helpers import kwh_from_power_csv, power_units_scale, plot_segment_energy, compute_segment_energy, with_commas, get_csv_data
+from helpers import kwh_from_power_csv, power_units_scale, plot_segment_energy, compute_segment_energy, with_commas, get_csv_data, build_energy_interval_table
 
 # -----------------------------------------------------------------------------
 # USER INPUTS
 # -----------------------------------------------------------------------------
+output_table_AL = "energy_table_AL_1000"
+
 
 # Number of HPWH units to scale results to
-N_units = 1
+N_units = 1_000
 
 # Default units (will be adjusted dynamically)
 units = "kW"
@@ -95,7 +97,7 @@ print(f"Total Daily Energy = {total_energy:.2f} kWh")
 
 
 
-df_energy = compute_segment_energy("P_mean_baseline_10000.csv")
+df_energy = compute_segment_energy("P_mean_baseline_AL_1000.csv")
 # -----------------------------------------------------------------------------
 # FUNCTION: Format integers with commas (for titles)
 # -----------------------------------------------------------------------------
@@ -106,12 +108,12 @@ df_energy = compute_segment_energy("P_mean_baseline_10000.csv")
 # Uses larger dataset if fleet exceeds 3000 units
 # -----------------------------------------------------------------------------
 if N_units > 3000:
-    df = pd.read_csv("P_mean_baseline_10000.csv")
-    df_control = pd.read_csv("P_mean_control_10000.csv")
+    df = pd.read_csv("P_mean_baseline_AL_1000.csv")
+    df_control = pd.read_csv("P_mean_control_AL_10000.csv")
     df_control_baseline = pd.read_csv("P_mean_baseline_minus_control_10000.csv")
 else:
-    df = pd.read_csv("P_mean_baseline_1000.csv")
-    df_control = pd.read_csv("P_mean_control_1000.csv")
+    df = pd.read_csv("P_mean_baseline_AL_1000.csv")
+    df_control = pd.read_csv("P_mean_control_AL_1000.csv")
 
 
 time, P_mean, P_97, P_2 = get_csv_data(df, N_units)
@@ -182,9 +184,9 @@ P_mean_max_c = P_mean_c.max()
 # -----------------------------------------------------------------------------
 
 # Baseline minus Controlled
-P_mean_adj = P_mean - P_mean_c
-P_97_adj = P_97 - P_2_c
-P_2_adj = P_2 - P_97_c
+P_mean_adj = P_mean_c - P_mean
+P_97_adj = P_97_c - P_2
+P_2_adj = P_2_c - P_97
 
 # Daily statistics
 P_mean_avg_adj = P_mean_adj.mean()
@@ -209,7 +211,7 @@ area_diff_kWh = (P_mean - P_mean_c).abs().sum() * 0.25
 print("area between curves", area_diff_kWh)
 
 # Convert to energy if desired (kWh)
-E_mean = P_mean_adj/ base / 4
+E_mean = P_mean_adj / base / 4
 E_97   = P_97_adj / base / 4
 E_2    = (P_2_adj) / base / 4
 
@@ -220,6 +222,14 @@ lower_diff = E_mean - E_2
 #time = df_minus.iloc[:, 0]
 #P_mean = pd.to_numeric(df_minus.iloc[:, 1], errors="coerce")
 #ninety_seventh = pd.to_numeric(df_minus.iloc[:, 2], errors="coerce")
+
+energy_table = build_energy_interval_table(
+    time,
+    E_mean,
+    E_97,
+    E_2,
+    output_table_AL
+)
 
 
 # -----------------------------------------------------------------------------
@@ -319,7 +329,7 @@ total_energy = df_energy["E_mean_kWh"].sum()
 print(f"Total Daily Energy = {total_energy:.2f} kWh")
 #units, base = power_units_scale(P_mean_max)
 
-"""
+
 # Create plot
 plt.figure(figsize=(12, 6))
 
@@ -366,7 +376,7 @@ N = 4  # every hour if 15-min increments
 plt.xticks(ticks=range(0, len(time_c), N),
            labels=time_c.iloc[::N],
            rotation=45)
-"""
+
 
 # -----------------------------------------------------------------------------
 # PLOT: CONTROLLED MINUS BASELINE

@@ -25,12 +25,12 @@ last_rows = 999         # Need data - 1. If 1000 points of data, 1000 - 1 = 999
 baseline_name = "180111_1_15_NR_Baseline_ready_data"
 controlled_name = "180111_1_15_NR_Controlled_ready_data"
 ready_csv = f"/home/sladefox/ochre_working/Ready_data/{controlled_name}.csv"
-output_file = "P_mean_control_1000.csv"
+output_file = "P_mean_controlled_AL_1000.csv"
 
-    # enter in the input and output file names.   
-    ninety_fifth_file_name  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_ML_1000_for_control.csv"
-    mean_file_name          = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_ML_1000_for_control.csv"
-    fifth_file_name         = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_ML_1000_for_control.csv"
+# enter in the input and output file names.   
+ninety_fifth_file_name  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_1000_for_controlled.csv"
+mean_file_name          = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_1000_for_controlled.csv"
+fifth_file_name         = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_1000_for_controlled.csv"
 
 time_select = '21:45'
 hour = 00

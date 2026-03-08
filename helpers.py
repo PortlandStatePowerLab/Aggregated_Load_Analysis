@@ -241,3 +241,56 @@ def get_plot_mean_with_band(
             labels=time.iloc[::N],
             rotation=45)
 """
+
+
+def build_energy_interval_table(time, E_mean, E_97, E_2, output_name):
+
+    df = pd.DataFrame({
+        "time": time,
+        "E_mean": E_mean,
+        "E_97": E_97,
+        "E_2": E_2
+    })
+
+    # determine sign of E_mean
+    sign = np.sign(df["E_mean"])
+
+    # treat zeros as same sign as previous
+    sign = sign.replace(0, np.nan).ffill().fillna(0)
+
+    # detect where sign changes
+    change = sign != sign.shift()
+
+    # assign group numbers
+    group_id = change.cumsum()
+
+    results = []
+
+    for _, group in df.groupby(group_id):
+
+        start_time = group["time"].iloc[0]
+        end_time   = group["time"].iloc[-1]
+
+        total_E_mean = group["E_mean"].sum()
+        total_E_97   = group["E_97"].sum()
+        total_E_2    = group["E_2"].sum()
+
+        duration_hours = len(group) * 0.25
+
+        results.append({
+            "start_time": start_time,
+            "end_time": end_time,
+            "duration_hours": duration_hours,
+            "E_mean_total_kWh": total_E_mean,
+            "E_97_total_kWh": total_E_97,
+            "E_2_total_kWh": total_E_2
+        })
+
+    result_df = pd.DataFrame(results)
+
+    # write CSV
+    result_df.to_csv(output_name + ".csv", index=False)
+
+    print("Saved:", output_name + ".csv")
+
+    return result_df
