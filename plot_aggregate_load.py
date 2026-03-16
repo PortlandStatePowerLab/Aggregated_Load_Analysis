@@ -315,7 +315,7 @@ plt.xticks(x[::4], time.iloc[::4], rotation=45)
 
 plt.xlabel("Time")
 plt.ylabel(f"Energy (kWh)")
-plt.title("Baseline Minus Controlled Energy by Time Interval With Confidence Envelope (1 Unit)")
+plt.title("Baseline Minus Controlled Energy by Time Interval With Confidence Envelope (1000 Unit)")
 plt.legend()
 plt.grid(axis="y")
 
