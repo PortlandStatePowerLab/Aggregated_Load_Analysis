@@ -13,6 +13,7 @@ import datetime as dt
 import pandas as pd
 from ochre import Dwelling
 from ochre.utils.schedule import ALL_SCHEDULE_NAMES
+from ochre.utils import default_input_path
 import concurrent.futures
 import random
 import time
@@ -31,7 +32,6 @@ start_time = time.time()
 # USER SETTINGS
 #########################################
 
-filename = '180113_1_3_Reserve_L0' # date that's thrown away, num of simulation days, data res, ramp or no ramp control
 
 level = 8
 
@@ -41,22 +41,23 @@ loadLVL = level    # more aggressive HP window during load-up (optional)
 
 
 
-# Paths TODO: change file path
-DEFAULT_INPUT = r"C:\Users\danap\anaconda3\Lib\site-packages\ochre\defaults\Input Files"
-DEFAULT_WEATHER = r"C:\Users\danap\anaconda3\Lib\site-packages\ochre\defaults\Weather\USA_OR_Portland.Intl.AP.726980_TMY3.epw"
-WORKING_DIR = r"C:\Users\danap\OCHRE_Working"
-INPUT_DIR = os.path.join(WORKING_DIR, "Input Files")
-WEATHER_DIR = os.path.join(WORKING_DIR, "Weather")
+INPUT_DIR = os.path.join(default_input_path, "Input Files") 
+WEATHER_DIR = os.path.join(os.path.dirname(INPUT_DIR), "Weather")
 WEATHER_FILE = os.path.join(WEATHER_DIR, "USA_OR_Portland.Intl.AP.726980_TMY3.epw")
+
+# 2. Define the Results folder next to the Input folder
+# This points to .../ochre/defaults/Results
+RESULTS_DIR = os.path.join(os.path.dirname(INPUT_DIR), "Results")
+
 
 # Simulation parameters
 Start = dt.datetime(2018, 1, 13, 0, 0)
 Duration = 2  # days
-t_res = 15  # minutes -- TODO: change?
+t_res = 15  # minutes
 jitter_min = 5
 
-# HPWH control parameters (°F) -- TODO: change to AO smith outputs (need to check my waterheater.py)
-Tcontrol_SHEDF = 130 #F
+# HPWH control parameters (°F) 
+Tcontrol_SHEDF = 126 #F
 step = 7 #F
 Tcontrol_dbF = np.arange(7, 7 + step, step) #<------------------------------------------
 Tcontrol_LOADF = 130 #F
@@ -186,19 +187,18 @@ def filter_schedules(home_path):
 #########################################
 
 def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF):
-    
     shed_deadbandC = f_to_c_DB(shed_deadbandF)
-
 
     filtered_sched_file = filter_schedules(home_path)
     hpxml_file = os.path.join(home_path, 'in.XML')
     results_dir = os.path.join(home_path, "Results")
     os.makedirs(results_dir, exist_ok=True)
 
+    # Standard configuration for both runs
     dwelling_args_local = {
         "start_time": Start,
         "time_res": dt.timedelta(minutes=t_res),
-        "duration": dt.timedelta(days=Duration),
+        "duration": dt.timedelta(days=Duration), # Ensure Duration is 3 for a 48hr post-warmup run
         "hpxml_file": hpxml_file,
         "hpxml_schedule_file": filtered_sched_file,
         "weather_file": weather_file_path,
@@ -206,7 +206,7 @@ def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF):
         "Equipment": {
             "Water Heating": {
                 "Initial Temperature (C)": TinitC, 
-                "hp_only_mode": False,# can set to True for HP only. 
+                "hp_only_mode": False, 
                 "Max Tank Temperature": 70,
                 "Upper Node": 3,
                 "Lower Node": 10,
@@ -215,20 +215,37 @@ def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF):
         }
     }
 
-    # # Baseline
-    # base_dwelling = Dwelling(name="HPWH Baseline", **dwelling_args_local)
-    # for t_base in base_dwelling.sim_times:
-    #     base_ctrl = {"Water Heating": {"Setpoint": TbaselineC, "Deadband": TdeadbandC, "Load Fraction": 1}}
-    #     base_dwelling.update(control_signal=base_ctrl)
-    # df_base, _, _ = base_dwelling.finalize()
+    # Define the columns we want to keep
+    COLS_TO_KEEP = ["Time", "Total Electric Power (kW)",
+                    "Total Electric Energy (kWh)",
+                    "Water Heating Electric Power (kW)",
+                    "Water Heating COP (-)",
+                    "Water Heating Deadband Upper Limit (C)",
+                    "Water Heating Deadband Lower Limit (C)",
+                    "Water Heating Control Temperature (C)",
+                    "Hot Water Outlet Temperature (C)"]
 
-    # Controlled
+    # --- 1. RUN BASELINE ---
+    # This simulates the house as if no special control logic was applied
+    base_dwelling = Dwelling(name="HPWH Baseline", **dwelling_args_local)
+    for t_base in base_dwelling.sim_times:
+        base_ctrl = {"Water Heating": {"Setpoint": TbaselineC, "Deadband": TdeadbandC, "Load Fraction": 1}}
+        base_dwelling.update(control_signal=base_ctrl)
+    
+    df_base, _, _ = base_dwelling.finalize()
+    df_base = remove_first_day(df_base, Start)
+    df_base = df_base[[c for c in COLS_TO_KEEP if c in df_base.columns]]
+    
+    df_base.to_parquet(os.path.join(results_dir, 'hpwh_baseline.parquet'), index=False)
+
+    # --- 2. RUN CONTROLLED ---
+    # This simulates the house using your custom determine_hpwh_control logic
     sim_dwelling = Dwelling(name="HPWH Controlled", **dwelling_args_local)
     hpwh_unit = sim_dwelling.get_equipment_by_end_use('Water Heating')
+    
     for sim_time in sim_dwelling.sim_times:
-        # --- NEW: Day 1 = no control -----------------------------------------
+        # Day 1: Warm-up period (Standard Baseline Control)
         if sim_time < Start + pd.Timedelta(days=1):
-            # FORCE baseline control explicitly
             control_cmd = {
                 'Water Heating': {
                     'Setpoint': TbaselineC,
@@ -236,77 +253,24 @@ def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF):
                     'Load Fraction': 1,
                 }
             }
-            sim_dwelling.update(control_signal=control_cmd)
-            continue
-
-        # ----------------------------------------------------------------------
-        
-        
-        current_setpt = hpwh_unit.schedule.loc[sim_time, 'Water Heating Setpoint (C)']
-        
-        control_cmd = determine_hpwh_control(sim_time=sim_time, 
-                                             current_temp_c=current_setpt, 
-                                             sched_cfg=schedule_cfg, 
-                                             shed_deadbandC=shed_deadbandC)
-        
+        # Day 2 & 3: Apply your custom control logic
+        else:
+            current_setpt = hpwh_unit.schedule.loc[sim_time, 'Water Heating Setpoint (C)']
+            control_cmd = determine_hpwh_control(
+                sim_time=sim_time, 
+                current_temp_c=current_setpt, 
+                sched_cfg=schedule_cfg, 
+                shed_deadbandC=shed_deadbandC
+            )
         
         sim_dwelling.update(control_signal=control_cmd)
+
     df_ctrl, _, _ = sim_dwelling.finalize()
-
     df_ctrl = remove_first_day(df_ctrl, Start)
-    # df_base = remove_first_day(df_base, Start)
     df_ctrl["Shed Deadband (F)"] = shed_deadbandF
-
-
-    CTRL_COLS = ["Time", "Total Electric Power (kW)",
-                 "Total Electric Energy (kWh)",
-                 "Water Heating Electric Power (kW)",
-                 "Water Heating COP (-)",
-                 "Water Heating Deadband Upper Limit (C)",
-                 "Water Heating Deadband Lower Limit (C)",
-                 "Water Heating Heat Pump COP (-)",
-                 "Water Heating Control Temperature (C)",
-                 "Hot Water Outlet Temperature (C)",
-                 "Temperature - Indoor (C)"]
-    # BASE_COLS = CTRL_COLS
-
-    df_ctrl = df_ctrl[[c for c in CTRL_COLS if c in df_ctrl.columns]]
-    # df_base = df_base[[c for c in BASE_COLS if c in df_base.columns]]
-        
-    df_ctrl.to_parquet(
-        os.path.join(results_dir, f'hpwh_controlled.parquet'),
-        index=False
-    )
-
-    # def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF): -- possibly pull from this?
-    # # ... (keep existing setup code) ...
+    df_ctrl = df_ctrl[[c for c in COLS_TO_KEEP if c in df_ctrl.columns] + ["Shed Deadband (F)"]]
     
-    # # --- 1. RUN BASELINE ---
-    # base_dwelling = Dwelling(name="HPWH Baseline", **dwelling_args_local)
-    # for t_base in base_dwelling.sim_times:
-    #     # Baseline uses constant standard settings
-    #     base_ctrl = {"Water Heating": {"Setpoint": TbaselineC, "Deadband": TdeadbandC, "Load Fraction": 1}}
-    #     base_dwelling.update(control_signal=base_ctrl)
-    
-    # df_base, _, _ = base_dwelling.finalize()
-    # df_base = remove_first_day(df_base, Start)
-    
-    # # Save Baseline specifically to its own parquet
-    # df_base.to_parquet(os.path.join(results_dir, 'hpwh_baseline.parquet'), index=False)
-
-    # # --- 2. RUN CONTROLLED ---
-    # sim_dwelling = Dwelling(name="HPWH Controlled", **dwelling_args_local)
-    # # ... (keep your existing loop for sim_dwelling.update) ...
-    
-    # df_ctrl, _, _ = sim_dwelling.finalize()
-    # df_ctrl = remove_first_day(df_ctrl, Start)
-    
-    # # Save Controlled specifically to its own parquet
-    # df_ctrl.to_parquet(os.path.join(results_dir, 'hpwh_controlled.parquet'), index=False)
-
-    # return df_ctrl
-
-    # cleanup_results_dir(results_dir, keep_files=['hpwh_baseline.parquet', 'hpwh_controlled.parquet'])
+    df_ctrl.to_parquet(os.path.join(results_dir, 'hpwh_controlled.parquet'), index=False)
 
     return df_ctrl
 
@@ -361,47 +325,7 @@ def cleanup_results_dir(results_dir, keep_files=None):
                 
 
 
-# def aggregate_across_deadbands(work_dir, prefix):
-#     """
-#     Combine <prefix>_Control_DB*.parquet into <prefix>_Control.parquet
-#     """
 
-#     pattern = re.compile(
-#         rf"^{re.escape(prefix)}_Control_DB(\d+)\.parquet$"
-#     )
-
-#     matches = []
-#     for fname in os.listdir(work_dir):
-#         m = pattern.match(fname)
-#         if m:
-#             matches.append((fname, int(m.group(1))))
-
-#     if not matches:
-#         print(f"⚠️ No deadband files found for {prefix}")
-#         return
-
-#     dfs = []
-#     for fname, dbF in sorted(matches, key=lambda x: x[1]):
-#         path = os.path.join(work_dir, fname)
-#         df = pd.read_parquet(path)
-
-#         # Enforce deadband metadata
-#         df["Shed Deadband (F)"] = dbF
-#         df["SourceFile"] = fname
-
-#         dfs.append(df)
-
-#     df_master = pd.concat(dfs, ignore_index=True)
-
-#     out_path = os.path.join(work_dir, f"{prefix}.parquet")
-#     df_master.to_parquet(out_path, index=False)
-
-#     print(
-#         f"\n✅ Cross-deadband aggregation complete\n"
-#         f"   Deadbands: {[db for _, db in matches]}\n"
-#         f"   Rows: {len(df_master):,}\n"
-#         f"   Output: {out_path}"
-#     )
 
 
 #########################################
@@ -409,23 +333,15 @@ def cleanup_results_dir(results_dir, keep_files=None):
 #########################################
 
 if __name__ == "__main__":
-    os.makedirs(INPUT_DIR, exist_ok=True)
-    os.makedirs(WEATHER_DIR, exist_ok=True)
+    # Ensure the library's results folder exists
+    os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    # Copy homes and weather file
-    for item in os.listdir(DEFAULT_INPUT):
-        src = os.path.join(DEFAULT_INPUT, item)
-        dst = os.path.join(INPUT_DIR, item)
-        if os.path.isdir(src) and not os.path.exists(dst):
-            shutil.copytree(src, dst)
+    # Discover homes directly from the library path
+    homes = [os.path.join(INPUT_DIR, d) for d in os.listdir(INPUT_DIR) 
+             if os.path.isdir(os.path.join(INPUT_DIR, d))]
+    print(f"Found {len(homes)} homes in {INPUT_DIR}")
 
-    if not os.path.exists(WEATHER_FILE):
-        shutil.copy(DEFAULT_WEATHER, WEATHER_FILE)
-
-    # Discover homes
-    homes = find_all_homes(INPUT_DIR)
-    print(f"Found {len(homes)} homes")
-
+    
     # -----------------------------
     # Assign schedules to homes
     # -----------------------------
@@ -515,68 +431,74 @@ if __name__ == "__main__":
         home_schedules[home] = sched
 
     # -----------------------------
-    # Sweep deadbands
-    # -----------------------------
-
-    # -----------------------------
-    # Sweep deadbands (safe aggregation)
+    # Execution Loop
     # -----------------------------
     for shed_dbF in Tcontrol_dbF:
-        print(f"\nRunning shed deadband = {shed_dbF} F")
-    
+        print(f"\nRunning simulation | DB = {shed_dbF} F")
         all_ctrl = []
     
-        # -----------------------------
-        # Run all homes in parallel safely
-        # -----------------------------
         def simulate_home_safe(home_path, weather_file, sched_cfg, shed_dbF):
             try:
+                # This calls your simulate_home which saves to home_path/Results
                 return simulate_home(home_path, weather_file, sched_cfg, shed_dbF)
             except Exception as e:
-                print(f"⚠️ Simulation failed for {home_path} (DB={shed_dbF}): {e}")
+                print(f"⚠️ Failed: {os.path.basename(home_path)}: {e}")
                 return None
     
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = [
-                executor.submit(simulate_home_safe, home, WEATHER_FILE, home_schedules[home], shed_dbF)
-                for home in homes
+                executor.submit(simulate_home_safe, h, WEATHER_FILE, home_schedules[h], shed_dbF)
+                for h in homes
             ]
-    
             for f in concurrent.futures.as_completed(futures):
-                df_result = f.result()
-                if df_result is not None:
-                    all_ctrl.append(df_result)
-    
-        # # -----------------------------
-        # # Aggregate immediately
-        # # -----------------------------
-        # if all_ctrl:  # only if at least one home succeeded
-        #     df_all = pd.concat(all_ctrl, ignore_index=True)
-        #     df_all["Home"] = df_all.get("Home", "Unknown")
-        #     df_all["Shed Deadband (F)"] = shed_dbF
-    
-        #     out_file = os.path.join(
-        #         WORKING_DIR,
-        #         f"{filename}_Control_DB{int(shed_dbF)}.parquet"
-        #     )
-        #     df_all.to_parquet(out_file, index=False)
-    
-        #     print(
-        #         f"Aggregated DB{shed_dbF}: "
-        #         f"{len(df_all):,} rows, "
-        #         f"{df_all['Home'].nunique()} homes"
-        #     )
-        # else:
-        #     print(f"⚠️ No successful homes to aggregate for DB{shed_dbF}")
+                res = f.result()
+                if res is not None: all_ctrl.append(res)
+
+    # ---------------------------------------------------------
+    # 1. AGGREGATE BASELINE (Run this once)
+    # ---------------------------------------------------------
+    print("\nAggregating Baseline Results...")
+    baseline_data = []
+    for home_path in homes:
+        res_path = os.path.join(home_path, "Results", "hpwh_baseline.parquet")
+        if os.path.exists(res_path):
+            df = pd.read_parquet(res_path)
+            df['Time'] = pd.to_datetime(df['Time'])
+            series = df.resample('15min', on='Time')['Water Heating Electric Power (kW)'].sum()
             
+            row = series.to_frame().T
+            row.index = [os.path.basename(home_path)]
+            baseline_data.append(row)
+
+    if baseline_data:
+        baseline_csv = os.path.join(RESULTS_DIR, "final_aggregated_baseline_15min.csv")
+        pd.concat(baseline_data).to_csv(baseline_csv)
+        print(f"✅ Baseline Matrix created at: {baseline_csv}")
+
+    # ---------------------------------------------------------
+    # 2. AGGREGATE CONTROLLED (Inside or after the deadband loop)
+    # ---------------------------------------------------------
+    # If you are only running ONE deadband, this can stay here. 
+    # If running multiple, move this inside the 'for shed_dbF in Tcontrol_dbF' loop.
+    print("\nAggregating Controlled Results...")
+    controlled_data = []
+    for home_path in homes:
+        res_path = os.path.join(home_path, "Results", "hpwh_controlled.parquet")
+        if os.path.exists(res_path):
+            df = pd.read_parquet(res_path)
+            df['Time'] = pd.to_datetime(df['Time'])
+            series = df.resample('15min', on='Time')['Water Heating Electric Power (kW)'].sum()
             
-# -----------------------------
-# Cross-deadband aggregation
-# -----------------------------
-# aggregate_across_deadbands(
-#     work_dir=WORKING_DIR,
-#     prefix=filename
-# )
+            row = series.to_frame().T
+            row.index = [os.path.basename(home_path)]
+            controlled_data.append(row)
+
+    if controlled_data:
+        controlled_csv = os.path.join(RESULTS_DIR, f"final_aggregated_controlled_DB{int(shed_dbF)}_15min.csv")
+        pd.concat(controlled_data).to_csv(controlled_csv)
+        print(f"✅ Controlled Matrix created at: {controlled_csv}")
+
+
 
 
 
