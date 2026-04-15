@@ -4,13 +4,15 @@ Created on Tue Sep 23 11:54:29 2025
 
 @author: Joe_admin
 @modified by: Jeff Dinsmore
-@modified date: 12/14/2025
+@modified by : jdeline
+@modified date: 4/14/2026
 
 """
 
 import pandas as pd
 import time
 import numpy as np
+import os
 #from tqdm import tqdm
 
 start_time = time.time()
@@ -35,7 +37,7 @@ def sample_data(input_df, units):
     df_sampled = input_df.sample(n=units, replace=True) # remove the random state when done testing! 
     
     #before returning, remove the site ID column and sort
-    df_sampled = df_sampled.drop(['Home'], axis=1)
+    df_sampled = df_sampled.drop(['building_id'], axis=1)
     return df_sampled
     
 def get_MCS_run(N, input_df):
@@ -70,17 +72,22 @@ def get_stats(input_df):
 ############################################################################
 
 # enter in the input and output file names.   
-input_file_name  = "/home/sladefox/ochre_working/Ready_data/180111_1_15_NR_Controlled_ready_data.csv"
+file = "final_aggregated_controlled_15min.csv" 
 
-upper_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_1000_for_controlled.csv"
-mean_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_1000_for_controlled.csv"
-lower_quant_output_file  = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_1000_for_controlled.csv"
-#variance_output_file     = "/home/sladefox/ochre_working/Ready_data/hpwh_var_AL_10000_for_baseline.csv"
-#standard_dev_output_file = "/home/sladefox/ochre_working/Ready_data/hpwh_sdev_AL_10000_for_baseline.csv"
-#skew_output_file         = "/home/sladefox/ochre_working/Ready_data/hpwh_skew_AL_10000_for_baseline.csv"
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+OCHRE_WORKING_DIR = os.path.join( os.path.dirname(CURRENT_DIR), "ochre_working")
+    
+input_file_name  = os.path.join(OCHRE_WORKING_DIR, "Ready_data", file)
+    
+upper_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_AL_10000_for_controlled.csv")
+mean_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_AL_10000_for_controlled.csv")
+lower_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_AL_10000_for_controlled.csv")
+#variance_output_file     = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_var_AL_10000_for_baseline.csv")
+#standard_dev_output_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_sdev_AL_10000_for_baseline.csv")
+#skew_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_skew_AL_10000_for_baseline.csv")
 
-unit_runs = 1000
-MCS_runs = 1000  
+unit_runs = 10000
+MCS_runs = 1500 
 
 ############################################################################
 #                             Program Start                                #
@@ -93,7 +100,7 @@ df = pd.read_csv(input_file_name)
 units_arr = np.arange(1, unit_runs+1)
 
 # get the times 
-times = df.drop(['Home'], axis=1).columns # this was changed from ee_site)id
+times = df.drop(['building_id'], axis=1).columns # this was changed from ee_site)id
 
 # initialize MSC table
 MCS_table = pd.DataFrame(np.nan, index=range(MCS_runs), columns=times)

@@ -57,7 +57,7 @@ def aggregate_ochre_results():
 
         if final_data:
             output_csv = os.path.join(READY_DATA_DIR, f"final_aggregated_{label}_15min.csv")
-            pd.concat(final_data).to_csv(output_csv)
+            pd.concat(final_data).to_csv(output_csv, index_label='building_id')
             print(f"✅ Success! Created: {output_csv}")
         else:
             print(f"❌ No {label} files found. Make sure the simulation finished!")

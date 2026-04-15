@@ -6,7 +6,7 @@ Created on Mon Nov 10 12:06:45 2025
 @edited by: jdeline
 """
 
-
+# work on makign it so i dsimulated builidngs in csv anf chnage the path that was changed in ochre inpout file 
 import os
 import shutil
 import datetime as dt
@@ -39,7 +39,12 @@ baseLVL = level    # normal operation
 shedLVL = level    # tighter HP window during shed (more ER fallback)
 loadLVL = level    # more aggressive HP window during load-up (optional)
 
+input_file = "Oregon80gal.csv" # this is the file that contains the list of buildings to simulate. It should be in the up06 folder.
+bldg_folder = "bldg"
 
+upgrade = 6
+relase = "resstock_tmy3_release_1"
+year = "2022"
 
 INPUT_DIR = os.path.join(default_input_path, "Input Files") 
 WEATHER_DIR = os.path.join(os.path.dirname(INPUT_DIR), "Weather")
