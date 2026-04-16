@@ -73,16 +73,16 @@ def get_stats(input_df):
 
 # enter in the input and output file names.   
 # enter in the input and output file names.   
-file = "final_aggregated_controlled_15min.csv" 
+file = "final_aggregated_baseline_15min.csv" 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OCHRE_WORKING_DIR = os.path.join( os.path.dirname(CURRENT_DIR), "ochre_working")
     
 input_file_name  = os.path.join(OCHRE_WORKING_DIR, "Ready_data", file)
     
-upper_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_PU_10000_for_controlled.csv")
-mean_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_PU_10000_for_controlled.csv")
-lower_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_PU_10000_for_controlled.csv")
+upper_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_PU_10000_for_baseline.csv")
+mean_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_PU_10000_for_baseline.csv")
+lower_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_PU_10000_for_baseline.csv")
 # variance_output_file     = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_var_PU_10000_for_baseline.csv")
 # standard_dev_output_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_sdev_PU_10000_for_baseline.csv")
 # skew_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_skew_PU_10000_for_baseline.csv")
@@ -131,9 +131,9 @@ for i, N in enumerate(range(1, unit_runs + 1), start=1):
     upper_quant_df.loc[i]  = stats_df.loc['0.975 Quant']
     mean_df.loc[i]         = stats_df.loc['Mean']
     lower_quant_df.loc[i]  = stats_df.loc['0.025 Quant']
-    variance_df.loc[i]     = stats_df.loc['Variance']te
-    std_dev_df.loc[i]      = stats_df.loc['Std Dev']
-    skew_df.loc[i]         = stats_df.loc['Skew']
+    # variance_df.loc[i]     = stats_df.loc['Variance']te
+    # std_dev_df.loc[i]      = stats_df.loc['Std Dev']
+    # skew_df.loc[i]         = stats_df.loc['Skew']
 
 # results_df.to_csv(output_file_name, index=True)
 upper_quant_df.to_csv(upper_quant_output_file, index=True)
