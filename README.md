@@ -164,7 +164,7 @@ git clone https://github.com/<your-username>/Aggregated-Load-Analysis.git
 Then navigate into the project folder:
 
 ```bash
-cd Aggregated-Load-Analysis
+cd Aggregated_Load_Analysis
 ``` 
 ---
 
