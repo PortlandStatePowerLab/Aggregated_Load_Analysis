@@ -4,7 +4,7 @@
 
 #### _A collection of Python scripts used to parse OCHRE heat pump water heater data, run Monte Carlo sampling, compute confidence intervals, and generate plots + Word documents._
 
-#### **Authors:** Jeff Dinsmore, Joe_admin, ChatGPT
+#### **Authors:** Jeff Dinsmore, Josephine DeLine, Dana Paresa, Joe_admin, ChatGPT
 
 ### Table of Contents
 
@@ -27,7 +27,7 @@ This folder contains several standalone Python scripts used in an HPWH (heat pum
 
 <a id="Item1"></a>
 
-### Get_marginal_load_final.py
+### Get_perunit_load_final.py
 
 **Purpose:** Monte Carlo sampling of HPWH load profiles for fleet sizes 1…unit_runs, computing time-series statistics per fleet size.
 Inputs: A “ready” CSV with a Home column and 15-minute time columns (e.g., 00:00, 00:15, …).
@@ -91,24 +91,133 @@ Inputs: Two folders of PNGs (./baseline_images, ./control_images by default).
 Outputs: A Word document (default: baseline_control_interleaved.docx).
 Notes: Uses python-docx, sets 0.5" margins, and paginates after each filled grid.
 
-## Setup/Installation Requirements
+## Python Version Requirement 
 
-* Install Python WSL or Ubuntu
-* Install Python 3.10+ (recommended)
-* Verify installation: python3 --version (WSL) or python --version (Windows)
-* Clone this repository
-* Open repository in your preferred code builder program. (This was built in VS Code)_
-* In the terminal, cd into the Aggregate_Load_Analysis folder
-Optional:
-* Create a virtual environment and install packages
-* Create venv: python3 -m venv .venv
+OCHRE is only compatible with specific Python versions:
 
-#### Activate:
+- Supported: Python >= 3.9 and < 3.13  
 
-Install dependencies (WSL/Ubuntu using sudo + apt):
+Check your version:
+```bash
+python --version
+```
+> Warning: Python 3.13+ is not supported and may cause compatibility issues
 
-* `sudo apt update`
-* `sudo apt install -y python3-pandas python3-numpy python3-matplotlib python3-sklearn python3-docx`
+
+
+## Setup/Installation 
+
+### 1. Environment Setup
+**Recommended:** Use WSL (Ubuntu) or a virtual environment
+
+Create a virtual environment:
+```bash
+python3 -m venv .venv
+```
+
+Activate:
+```bash
+source .venv/bin/activate   # WSL / Linux
+.venv\Scripts\activate      # Windows
+```
+
+---
+
+### 2. Install Dependencies
+
+**WSL / Ubuntu:**
+```bash
+sudo apt update
+sudo apt install -y python3-pandas python3-numpy python3-matplotlib python3-sklearn python3-docx
+```
+
+**Alternatively (pip):**
+```bash
+pip install pandas numpy matplotlib scikit-learn python-docx
+```
+
+--- 
+
+### 3. Install OCHRE 
+OCHRE can be installed using `pip` from the command line:
+
+```bash
+pip install ochre-nrel
+```
+
+Alternatively, you can install a specific branch (for development features):
+
+```bash
+pip install git+https://github.com/NREL/OCHRE@dev
+```
+
+---
+
+### 4. Clone this repository
+
+To get a local copy of this project, run:
+
+```bash
+git clone https://github.com/<your-username>/Aggregate-Load-Analysis.git
+```
+
+Then navigate into the project folder:
+
+```bash
+cd Aggregate-Load-Analysis
+``` 
+---
+
+### 5. Required Modifications
+
+This project requires **modified versions of OCHRE source files**.
+
+After installing OCHRE, you must replace:
+
+- `waterheater.py`
+- `analysis.py`
+
+with the versions provided in:
+
+```bash
+Aggregate_Load_Analysis/setup/
+```
+
+> These modifications are required for the Monte Carlo and aggregation pipeline to work correctly.
+
+---
+
+### 6. Download RESTOCK data
+
+Navigate to the data download script in the repository:
+
+```bash
+Aggregated_Load_Analysis/setup/downloadTestSet.py
+```
+
+Run or modify this script to select the desired dataset.
+
+### Instructions
+
+1. Open `downloadTestSet.py`
+2. Select the CSV file(s) corresponding to the desired buildings (examples are provided in the `up06/` folder)
+3. Modify the list of selected building CSVs in the script as needed
+4. Run the script:
+
+
+### Output Location
+
+Downloaded data will be saved to the OCHRE input directory:
+
+```bash
+ochre/defaults/input_files/bldg/
+```
+
+> Only selected CSV files will be downloaded. Ensure the correct building IDs are specified before running the script.
+
+
+
+
 
 ## Known Bugs
 
@@ -132,6 +241,6 @@ Any known issues, please reach out to Jeff Dinsmore by email at hello@jeffdinsmo
 
 ## License
 
-Copyright (c) 2025 - Updated Feb 2026, Jeff Dinsmore
+Copyright (c) 2025 -    , Jeff Dinsmore
 
 This software is licensed under the GNU General Public License.
