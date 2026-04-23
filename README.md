@@ -158,13 +158,13 @@ pip install git+https://github.com/NREL/OCHRE@dev
 To get a local copy of this project, run:
 
 ```bash
-git clone https://github.com/<your-username>/Aggregate-Load-Analysis.git
+git clone https://github.com/<your-username>/Aggregated-Load-Analysis.git
 ```
 
 Then navigate into the project folder:
 
 ```bash
-cd Aggregate-Load-Analysis
+cd Aggregated_Load_Analysis
 ``` 
 ---
 
@@ -180,7 +180,7 @@ After installing OCHRE, you must replace:
 with the versions provided in:
 
 ```bash
-Aggregate_Load_Analysis/setup/
+Aggregated_Load_Analysis/setup/
 ```
 
 > These modifications are required for the Monte Carlo and aggregation pipeline to work correctly.
