@@ -12,14 +12,20 @@ and writes result to a new CSV while preserving the time column.
 """
 
 import pandas as pd
+import os
 
 
 # ---------------------------------------------------------------------
 # USER INPUTS
 # ---------------------------------------------------------------------
-baseline_file = "P_mean_baseline_10000.csv"
-control_file  = "P_mean_control_10000.csv"
-output_file   = "P_mean_baseline_minus_control_10000.csv"
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
+
+
+baseline_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_baseline_AL_10000.csv")
+control_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_AL_10000.csv")
+output_file   = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_AL_control_minus_baseline_10000.csv")
 
 
 # ---------------------------------------------------------------------
@@ -40,7 +46,7 @@ if not df_base.iloc[:, 0].equals(df_ctrl.iloc[:, 0]):
 
 
 # ---------------------------------------------------------------------
-# PERFORM SUBTRACTION (baseline - control)
+# PERFORM SUBTRACTION (control - baseline)
 # ---------------------------------------------------------------------
 result_df = pd.DataFrame()
 
@@ -50,18 +56,18 @@ result_df["time"] = df_base.iloc[:, 0]
 
 # Subtract numeric columns
 result_df["P_mean"] = (
-    pd.to_numeric(df_base.iloc[:, 1], errors="coerce")
-    - pd.to_numeric(df_ctrl.iloc[:, 1], errors="coerce")
+    pd.to_numeric(df_ctrl.iloc[:, 1], errors="coerce")
+    - pd.to_numeric(df_base.iloc[:, 1], errors="coerce")
 )
 
 result_df["95th"] = (
-    pd.to_numeric(df_base.iloc[:, 2], errors="coerce")
-    - pd.to_numeric(df_ctrl.iloc[:, 2], errors="coerce")
+    pd.to_numeric(df_ctrl.iloc[:, 2], errors="coerce")
+    - pd.to_numeric(df_base.iloc[:, 2], errors="coerce")
 )
 
 result_df["5th"] = (
-    pd.to_numeric(df_base.iloc[:, 3], errors="coerce")
-    - pd.to_numeric(df_ctrl.iloc[:, 3], errors="coerce")
+    pd.to_numeric(df_ctrl.iloc[:, 3], errors="coerce")
+    - pd.to_numeric(df_base.iloc[:, 3], errors="coerce")
 )
 
 

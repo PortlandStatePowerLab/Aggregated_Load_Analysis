@@ -3,8 +3,8 @@
 Created on Wed Sep 24 08:57:35 2025
 
 @author: Joe_admin
-@modified: Jeff Dinsmore
-@modified date: 01/25/2026
+@modified: Jeff Dinsmore, Josephine DeLine
+@modified date: 04/22/2026
 """
 
 import pandas as pd
@@ -21,20 +21,26 @@ start_time = time.time()
 #                           Enter inputs here                              #
 ############################################################################
 
-last_rows = 999         # Need data - 1. If 1000 points of data, 1000 - 1 = 999
-baseline_name = "180111_1_15_NR_Baseline_ready_data"
-controlled_name = "180111_1_15_NR_Controlled_ready_data"
-ready_csv = f"/home/sladefox/ochre_working/Ready_data/{controlled_name}.csv"
-output_file = "P_mean_controlled_AL_1000.csv"
+last_rows = 9999         # Need data - 1. If 1000 points of data, 1000 - 1 = 999
+baseline_name = "final_aggregated_baseline_15min.csv"
+controlled_name = "final_aggregated_controlled_15min.csv"
 
-# enter in the input and output file names.   
-ninety_fifth_file_name  = "/home/sladefox/ochre_working/Ready_data/hpwh_975th_AL_1000_for_controlled.csv"
-mean_file_name          = "/home/sladefox/ochre_working/Ready_data/hpwh_Mean_AL_1000_for_controlled.csv"
-fifth_file_name         = "/home/sladefox/ochre_working/Ready_data/hpwh_025th_AL_1000_for_controlled.csv"
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
+
+ready_csv = os.path.join(OCHRE_WORKING_DIR, "Ready_data", controlled_name)
+
+output_file =os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_PU_10000.csv")
+
+# enter in the input and output file names.
+ninety_fifth_file_name = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_PU_10000_for_controlled.csv")
+mean_file_name = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_PU_10000_for_controlled.csv")
+fifth_file_name = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_PU_10000_for_controlled.csv")
 
 time_select = '21:45'
 hour = 00
 minute = '00'
+
 ############################################################################
 #                             Program Start                                #
 ############################################################################
@@ -43,6 +49,7 @@ minute = '00'
 ninety_fifth_df = pd.read_csv(ninety_fifth_file_name)
 mean_df         = pd.read_csv(mean_file_name)
 fifth_df        = pd.read_csv(fifth_file_name)
+
 
 # get housing number
 file_df = pd.read_csv(ready_csv)
@@ -53,6 +60,10 @@ print("N_rows_in_file =", N_rows_in_file)
 ninety_fifth_df = ninety_fifth_df.drop(['Unnamed: 0'], axis=1)
 mean_df         = mean_df.drop(['Unnamed: 0'], axis=1)
 fifth_df        = fifth_df.drop(['Unnamed: 0'], axis=1)
+
+mean_df.columns = pd.to_datetime(mean_df.columns, errors='coerce').strftime('%H:%M')
+ninety_fifth_df.columns = pd.to_datetime(ninety_fifth_df.columns, errors='coerce').strftime('%H:%M')
+fifth_df.columns = pd.to_datetime(fifth_df.columns, errors='coerce').strftime('%H:%M')
 
 
 # cut off the early data
