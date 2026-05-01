@@ -23,9 +23,9 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
 
 
-baseline_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_baseline_AL_10000.csv")
-control_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_AL_10000.csv")
-output_file   = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_AL_control_minus_baseline_10000.csv")
+baseline_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_baseline_PU_10000.csv")
+control_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_PU_10000.csv")
+output_file   = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_PU_control_minus_baseline_10000.csv")
 
 
 # ---------------------------------------------------------------------
@@ -60,13 +60,13 @@ result_df["P_mean"] = (
     - pd.to_numeric(df_base.iloc[:, 1], errors="coerce")
 )
 
-result_df["95th"] = (
-    pd.to_numeric(df_ctrl.iloc[:, 2], errors="coerce")
+result_df["best_case"] = (
+    pd.to_numeric(df_ctrl.iloc[:, 3], errors="coerce")
     - pd.to_numeric(df_base.iloc[:, 2], errors="coerce")
 )
 
-result_df["5th"] = (
-    pd.to_numeric(df_ctrl.iloc[:, 3], errors="coerce")
+result_df["worst_case"] = (
+    pd.to_numeric(df_ctrl.iloc[:, 2], errors="coerce")
     - pd.to_numeric(df_base.iloc[:, 3], errors="coerce")
 )
 

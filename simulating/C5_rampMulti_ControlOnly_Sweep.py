@@ -39,20 +39,21 @@ baseLVL = level    # normal operation
 shedLVL = level    # tighter HP window during shed (more ER fallback)
 loadLVL = level    # more aggressive HP window during load-up (optional)
 
-input_file = "Oregon80gal.csv" # this is the file that contains the list of buildings to simulate. It should be in the up06 folder.
-bldg_folder = "bldg"
+input_file = "OR_upgrade06_2022.1.csv" # this is the file that contains the list of buildings to simulate. It should be in the up06 folder.
+bldg_folder = "bldg_files"
 
-upgrade = 6
+upgrade = 6  
 relase = "resstock_tmy3_release_1"
 year = "2022"
 
-INPUT_DIR = os.path.join(default_input_path, "Input Files") 
-WEATHER_DIR = os.path.join(os.path.dirname(INPUT_DIR), "Weather")
+DEFAULT_DIR = os.path.join(default_input_path, "Input Files")
+INPUT_DIR = os.path.join(DEFAULT_DIR, bldg_folder)
+WEATHER_DIR = os.path.join(os.path.dirname(DEFAULT_DIR), "Weather")
 WEATHER_FILE = os.path.join(WEATHER_DIR, "USA_OR_Portland.Intl.AP.726980_TMY3.epw")
 
 # 2. Define the Results folder next to the Input folder
 # This points to .../ochre/defaults/Results
-RESULTS_DIR = os.path.join(os.path.dirname(INPUT_DIR), "Results")
+RESULTS_DIR = os.path.join(os.path.dirname(DEFAULT_DIR), "Results")
 
 
 # Simulation parameters
@@ -62,13 +63,12 @@ t_res = 15  # minutes
 jitter_min = 5
 
 # HPWH control parameters (°F) 
-Tcontrol_SHEDF = 126 #F
-step = 7 #F
-Tcontrol_dbF = np.arange(7, 7 + step, step) #<------------------------------------------
-Tcontrol_LOADF = 130 #F
-Tcontrol_LOADdeadbandF = 7 #F
-TbaselineF = 130 #F
-TdeadbandF = 7 #F
+Tcontrol_SHEDF = 126 #F Shed setpoint
+Tcontrol_LOADF = 130 #F Load up setpoint
+Tcontrol_LOADdeadbandF = 2 #F Load up deadband
+TbaselineF = 130 #F Baseline setpoint
+TdeadbandF = 7 #F baseline deadband
+shed_deadbandF = 10 #shed deadband
 Tinit = 128 #F
 
 # Base schedule template
@@ -272,8 +272,7 @@ def simulate_home(home_path, weather_file_path, schedule_cfg, shed_deadbandF):
 
     df_ctrl, _, _ = sim_dwelling.finalize()
     df_ctrl = remove_first_day(df_ctrl, Start)
-    df_ctrl["Shed Deadband (F)"] = shed_deadbandF
-    df_ctrl = df_ctrl[[c for c in COLS_TO_KEEP if c in df_ctrl.columns] + ["Shed Deadband (F)"]]
+    df_ctrl = df_ctrl[[c for c in COLS_TO_KEEP if c in df_ctrl.columns]]
     
     df_ctrl.to_parquet(os.path.join(results_dir, 'hpwh_controlled.parquet'), index=False)
 
@@ -438,26 +437,27 @@ if __name__ == "__main__":
     # -----------------------------
     # Execution Loop
     # -----------------------------
-    for shed_dbF in Tcontrol_dbF:
-        print(f"\nRunning simulation | DB = {shed_dbF} F")
-        all_ctrl = []
+    shed_dbF = shed_deadbandF
+    print(f"\nRunning simulation | DB = {shed_dbF} F")
+
+    all_ctrl = []
     
-        def simulate_home_safe(home_path, weather_file, sched_cfg, shed_dbF):
-            try:
-                # This calls your simulate_home which saves to home_path/Results
-                return simulate_home(home_path, weather_file, sched_cfg, shed_dbF)
-            except Exception as e:
-                print(f"⚠️ Failed: {os.path.basename(home_path)}: {e}")
-                return None
+    def simulate_home_safe(home_path, weather_file, sched_cfg, shed_dbF):
+        try:
+            # This calls your simulate_home which saves to home_path/Results
+            return simulate_home(home_path, weather_file, sched_cfg, shed_dbF)
+        except Exception as e:
+            print(f"⚠️ Failed: {os.path.basename(home_path)}: {e}")
+            return None
     
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [
-                executor.submit(simulate_home_safe, h, WEATHER_FILE, home_schedules[h], shed_dbF)
-                for h in homes
-            ]
-            for f in concurrent.futures.as_completed(futures):
-                res = f.result()
-                if res is not None: all_ctrl.append(res)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [
+            executor.submit(simulate_home_safe, h, WEATHER_FILE, home_schedules[h], shed_dbF)
+            for h in homes
+        ]
+        for f in concurrent.futures.as_completed(futures):
+            res = f.result()
+            if res is not None: all_ctrl.append(res)
 
     # ---------------------------------------------------------
     # 1. AGGREGATE BASELINE (Run this once)

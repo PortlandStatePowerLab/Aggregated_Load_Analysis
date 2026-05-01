@@ -28,7 +28,9 @@ output_name = os.path.join(output_folder, "FINAL_with_all_areas.png")
 df = pd.read_csv(input_csv)
 df["time"] = df["time"].astype(str)
 
-y = df["P_mean"].values
+y_mean  = df["P_mean"].values
+y_best  = df["best_case"].values
+y_worst = df["worst_case"].values
 x = np.arange(len(df))
 
 # ---------------------------
@@ -61,7 +63,7 @@ for name, t, dur, color in schedule:
 
 def compute_area(start, end):
     x_seg = x[start:end]
-    y_seg = y[start:end]
+    y_seg = y_mean[start:end]
 
     pos = np.trapz(np.maximum(y_seg, 0), x_seg)
     neg = np.trapz(np.minimum(y_seg, 0), x_seg)
@@ -96,11 +98,17 @@ plt.figure(figsize=(12, 6))
 ax = plt.gca()
 
 # --- SHADE ABOVE / BELOW ZERO ---
-ax.fill_between(x, y, 0, where=(y >= 0), alpha=0.3)
-ax.fill_between(x, y, 0, where=(y < 0), alpha=0.3)
+# --- SHADE RANGE (BEST ↔ WORST) ---
+ax.fill_between(x, y_best, y_worst, alpha=0.2, label="Best–Worst Range", color="gray")
 
-# --- MAIN LINE ---
-ax.plot(x, y, color="black", linewidth=2)
+# --- SHADE ABOVE / BELOW ZERO (MEAN ONLY) ---
+ax.fill_between(x, y_mean, 0, where=(y_mean >= 0), alpha=0.3)
+ax.fill_between(x, y_mean, 0, where=(y_mean < 0), alpha=0.3)
+
+# --- LINES ---
+ax.plot(x, y_mean,  color="black", linewidth=2, label="Mean")
+ax.plot(x, y_best,  linestyle="--", label="Best Case (Max Shed)", color="orange")
+ax.plot(x, y_worst, linestyle="--", label="Worst Case (Min Shed)", color="blue")
 
 # ---------------------------
 # SCHEDULE WINDOWS + LABELS INSIDE
@@ -114,21 +122,21 @@ for label, start, end, color in windows:
     mid = (start + end) // 2
 
     # place INSIDE region
-    y_mid = np.mean(y[start:end]) + 0.05
+    y_mid = np.mean(y_mean[start:end]) + 0.05
 
-    ax.text(
-        mid,
-        y_mid,
-        f"{label}\nNet {net:.2f}",
-        ha="center",
-        fontsize=9,
-        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none")
-    )
+    # ax.text(
+    #     mid,
+    #     y_mid,
+    #     f"{label}\nNet {net:.2f}",
+    #     ha="center",
+    #     fontsize=9,
+    #     bbox=dict(facecolor="white", alpha=0.7, edgecolor="none")
+    # )
 
 # ---------------------------
 # BLUE REGION (POSITIVE) LABELS
 # ---------------------------
-positive_regions = find_positive_regions(y)
+positive_regions = find_positive_regions(y_mean)
 
 for start, end in positive_regions:
     pos, _, _ = compute_area(start, end)
@@ -140,17 +148,17 @@ for start, end in positive_regions:
         continue
 
     mid = (start + end) // 2
-    y_mid = np.mean(y[start:end]) -0.03
+    y_mid = np.mean(y_mean[start:end]) -0.03
 
-    ax.text(
-        mid,
-        y_mid,
-        f"+{pos:.2f}",
-        ha="center",
-        fontsize=9,
-        color="blue",
-        bbox=dict(facecolor="white", alpha=0.6, edgecolor="none")
-    )
+    # ax.text(
+    #     mid,
+    #     y_mid,
+    #     f"+{pos:.2f}",
+    #     ha="center",
+    #     fontsize=9,
+    #     color="blue",
+    #     bbox=dict(facecolor="white", alpha=0.6, edgecolor="none")
+    # )
 
 # ---------------------------
 # AXES
@@ -169,11 +177,15 @@ plt.xticks(
 )
 
 legend_elements = [
-    Line2D([0], [0], color='black', lw=2, label='Control - Baseline'),
+    Line2D([0], [0], color='black', lw=2, label='Mean (Control - Baseline)'),
+    Line2D([0], [0], linestyle='--', label='Best Case', color='orange'),
+    Line2D([0], [0], linestyle='--', label='Worst Case', color='blue'),
 
     Patch(facecolor='green', alpha=0.15, label='Load Up Event'),
     Patch(facecolor='yellow', alpha=0.15, label='Shed Event'),
+    Patch(facecolor='gray', alpha=0.2, label='Best–Worst Range')
 ]
+
 plt.legend(handles=legend_elements, loc='lower right')
 plt.tight_layout()
 plt.savefig(output_name, dpi=300)

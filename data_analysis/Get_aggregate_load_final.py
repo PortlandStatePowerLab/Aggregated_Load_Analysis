@@ -72,22 +72,22 @@ def get_stats(input_df):
 ############################################################################
 
 # enter in the input and output file names.   
-file = "final_aggregated_baseline_15min.csv" 
+file = "final_aggregated_controlled_15min.csv" 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OCHRE_WORKING_DIR = os.path.join( os.path.dirname(CURRENT_DIR), "ochre_working")
     
 input_file_name  = os.path.join(OCHRE_WORKING_DIR, "Ready_data", file)
     
-upper_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_AL_10000_for_baseline.csv")
-mean_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_AL_10000_for_baseline.csv")
-lower_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_AL_10000_for_baseline.csv")
-#variance_output_file     = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_var_AL_10000_for_baseline.csv")
-#standard_dev_output_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_sdev_AL_10000_for_baseline.csv")
-#skew_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_skew_AL_10000_for_baseline.csv")
+upper_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_975th_AL_10000_for_controlled.csv")
+mean_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_Mean_AL_10000_for_controlled.csv")
+lower_quant_output_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_025th_AL_10000_for_controlled.csv")
+#variance_output_file     = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_var_AL_10000_for_controlled.csv")
+#standard_dev_output_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_sdev_AL_10000_for_controlled.csv")
+#skew_output_file         = os.path.join(OCHRE_WORKING_DIR, "N_10000", "hpwh_skew_AL_10000_for_controlled.csv")
 
 unit_runs = 10000
-MCS_runs = 1500 
+MCS_runs = 1000 
 
 ############################################################################
 #                             Program Start                                #
