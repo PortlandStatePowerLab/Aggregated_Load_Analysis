@@ -23,9 +23,9 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
 
 
-baseline_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_baseline_PU_10000.csv")
-control_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_PU_10000.csv")
-output_file   = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_PU_control_minus_baseline_10000.csv")
+baseline_file = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_baseline_AL_10000.csv")
+control_file  = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_controlled_AL_10000.csv")
+output_file   = os.path.join(OCHRE_WORKING_DIR, "N_10000", "P_mean_AL_control_minus_baseline_10000.csv")
 
 
 # ---------------------------------------------------------------------

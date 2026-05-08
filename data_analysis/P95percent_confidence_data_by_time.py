@@ -51,6 +51,7 @@ mean_df         = pd.read_csv(mean_file_name)
 fifth_df        = pd.read_csv(fifth_file_name)
 
 
+
 # get housing number
 file_df = pd.read_csv(ready_csv)
 N_rows_in_file = file_df.shape[0]
@@ -70,6 +71,8 @@ fifth_df.columns = pd.to_datetime(fifth_df.columns, errors='coerce').strftime('%
 ninety_fifth_df = ninety_fifth_df.tail(last_rows)
 mean_df         = mean_df.tail(last_rows)
 fifth_df        = fifth_df.tail(last_rows)
+print(mean_df.columns.tolist())
+print("Example time_select:", time_select)
 
 for i in range (96):
     if len(str(hour)) == 1:

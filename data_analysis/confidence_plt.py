@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 import numpy as np
 import os
@@ -34,161 +33,95 @@ y_worst = df["worst_case"].values
 x = np.arange(len(df))
 
 # ---------------------------
-# TIME → INDEX
+# FIGURE (2 PANELS)
 # ---------------------------
+fig, (ax, ax2) = plt.subplots(
+    2, 1,
+    figsize=(12, 6),
+    gridspec_kw={'height_ratios': [5, 1]},
+    sharex=True
+)
+
+plt.subplots_adjust(hspace=0.05)
+
+# ---------------------------
+# MAIN PLOT
+# ---------------------------
+ax.fill_between(x, y_mean, 0, where=(y_mean >= 0), alpha=0.3)
+ax.fill_between(x, y_mean, 0, where=(y_mean < 0), alpha=0.3)
+
+ax.plot(x, y_mean,  color="black", linewidth=2, label="Mean")
+ax.plot(x, y_best,  linestyle="--", color="orange", label="Best Case")
+ax.plot(x, y_worst, linestyle="--", color="blue", label="Worst Case")
+
+ax.set_title("Per Unit Control Minus Baseline (10,000 Units)")
+ax.set_ylabel("Power [p.u.]")
+ax.grid(True)
+
+# ---------------------------
+# TIME LABELS (ON MAIN AXIS)
+# ---------------------------
+tick_positions = range(0, len(df), 4)
+
+ax.set_xticks(tick_positions)
+ax.set_xticklabels(
+    [f"{i//4:02d}:00" for i in tick_positions],
+    rotation=45
+)
+
+# hide duplicate labels on bottom axis
+ax.tick_params(labelbottom=True)
+
+# ---------------------------
+# EVENT BAR (BELOW TIME)
+# ---------------------------
+ax2.set_ylim(0, 1)
+ax2.set_yticks([])
+ax2.set_frame_on(False)
+
+schedule = [
+    ("LOADUP",   "03:00", 3, "green"),
+    ("SHED", "06:00", 4, "yellow"),
+    ("LOADUP",   "16:00", 1, "green"),
+    ("SHED", "17:00", 3, "yellow"),
+]
+
 def time_to_index(t):
     h, m = map(int, t.split(":"))
     return int((h * 60 + m) / 15)
 
-# ---------------------------
-# SCHEDULE
-# ---------------------------
-schedule = [
-    ("Morning LU", '03:00', 3, "green"),
-    ("Morning Shed", '06:00', 4, "yellow"),
-    ("Evening LU", '16:00', 1, "green"),
-    ("Evening Shed", '17:00', 3, "yellow"),
-]
-
-# Convert schedule
-windows = []
 for name, t, dur, color in schedule:
     start = time_to_index(t)
     end = start + dur * 4
-    windows.append((name, start, end, color))
+
+    ax2.fill_between([start, end], 0, 1, color=color, alpha=0.6)
+
+    ax2.text(
+        (start + end) / 2,
+        0.5,
+        name,
+        ha="center",
+        va="center",
+        fontsize=8
+    )
 
 # ---------------------------
-# AREA FUNCTION
+# LEGEND
 # ---------------------------
-
-def compute_area(start, end):
-    x_seg = x[start:end]
-    y_seg = y_mean[start:end]
-
-    pos = np.trapz(np.maximum(y_seg, 0), x_seg)
-    neg = np.trapz(np.minimum(y_seg, 0), x_seg)
-
-    return pos, neg, pos + neg
-
-# ---------------------------
-# FIND POSITIVE REGIONS (BLUE)
-# ---------------------------
-def find_positive_regions(y):
-    regions = []
-    in_region = False
-    start = 0
-
-    for i in range(len(y)):
-        if y[i] > 0 and not in_region:
-            start = i
-            in_region = True
-        elif y[i] <= 0 and in_region:
-            regions.append((start, i))
-            in_region = False
-
-    if in_region:
-        regions.append((start, len(y)))
-
-    return regions
-
-# ---------------------------
-# PLOT
-# ---------------------------
-plt.figure(figsize=(12, 6))
-ax = plt.gca()
-
-# --- SHADE ABOVE / BELOW ZERO ---
-# --- SHADE RANGE (BEST ↔ WORST) ---
-ax.fill_between(x, y_best, y_worst, alpha=0.2, label="Best–Worst Range", color="gray")
-
-# --- SHADE ABOVE / BELOW ZERO (MEAN ONLY) ---
-ax.fill_between(x, y_mean, 0, where=(y_mean >= 0), alpha=0.3)
-ax.fill_between(x, y_mean, 0, where=(y_mean < 0), alpha=0.3)
-
-# --- LINES ---
-ax.plot(x, y_mean,  color="black", linewidth=2, label="Mean")
-ax.plot(x, y_best,  linestyle="--", label="Best Case (Max Shed)", color="orange")
-ax.plot(x, y_worst, linestyle="--", label="Worst Case (Min Shed)", color="blue")
-
-# ---------------------------
-# SCHEDULE WINDOWS + LABELS INSIDE
-# ---------------------------
-for label, start, end, color in windows:
-    ax.axvspan(start, end, color=color, alpha=0.15)
-    threshold = 0.05
-    pos, neg, net = compute_area(start, end)
-    if abs(net) < threshold:
-        continue
-    mid = (start + end) // 2
-
-    # place INSIDE region
-    y_mid = np.mean(y_mean[start:end]) + 0.05
-
-    # ax.text(
-    #     mid,
-    #     y_mid,
-    #     f"{label}\nNet {net:.2f}",
-    #     ha="center",
-    #     fontsize=9,
-    #     bbox=dict(facecolor="white", alpha=0.7, edgecolor="none")
-    # )
-
-# ---------------------------
-# BLUE REGION (POSITIVE) LABELS
-# ---------------------------
-positive_regions = find_positive_regions(y_mean)
-
-for start, end in positive_regions:
-    pos, _, _ = compute_area(start, end)
-
-    pos_rounded = round(pos, 2)
-
-# Skip if it will DISPLAY as 0.00
-    if pos_rounded == 0:
-        continue
-
-    mid = (start + end) // 2
-    y_mid = np.mean(y_mean[start:end]) -0.03
-
-    # ax.text(
-    #     mid,
-    #     y_mid,
-    #     f"+{pos:.2f}",
-    #     ha="center",
-    #     fontsize=9,
-    #     color="blue",
-    #     bbox=dict(facecolor="white", alpha=0.6, edgecolor="none")
-    # )
-
-# ---------------------------
-# AXES
-# ---------------------------
-plt.xlabel("Time")
-plt.ylabel("Power [p.u.]")
-plt.title(" Per Unit Control Minus Baseline (10,000 Units)")
-plt.grid(True)
-
-# X ticks every hour
-tick_positions = range(0, len(df), 4)
-plt.xticks(
-    ticks=tick_positions,
-    labels=[f"{i//4:02d}:00" for i in tick_positions],
-    rotation=45
-)
-
 legend_elements = [
-    Line2D([0], [0], color='black', lw=2, label='Mean (Control - Baseline)'),
-    Line2D([0], [0], linestyle='--', label='Best Case', color='orange'),
-    Line2D([0], [0], linestyle='--', label='Worst Case', color='blue'),
-
-    Patch(facecolor='green', alpha=0.15, label='Load Up Event'),
-    Patch(facecolor='yellow', alpha=0.15, label='Shed Event'),
-    Patch(facecolor='gray', alpha=0.2, label='Best–Worst Range')
+    Line2D([0], [0], color='black', lw=2, label='Mean'),
+    Line2D([0], [0], linestyle='--', color='orange', label='Best Case'),
+    Line2D([0], [0], linestyle='--', color='blue', label='Worst Case'),
 ]
 
-plt.legend(handles=legend_elements, loc='lower right')
+ax.legend(handles=legend_elements, loc='lower right')
+
+# ---------------------------
+# SAVE
+# ---------------------------
+ax2.xaxis.set_visible(False)
 plt.tight_layout()
-plt.savefig(output_name, dpi=300)
+plt.savefig(output_name, dpi=300, bbox_inches="tight")
 plt.close()
 
 print(f"Saved to: {output_name}")
