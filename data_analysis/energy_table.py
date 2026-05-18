@@ -1,96 +1,75 @@
-import pandas as pd
-import numpy as np
 import os
+import numpy as np
+import pandas as pd
 
-# ---------------------------
-# LOAD DATA
-# ---------------------------
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
 
-input_csv = os.path.join(
+input_delta_csv = os.path.join(
     OCHRE_WORKING_DIR,
     "N_10000",
-    "P_mean_PU_control_minus_baseline_10000.csv"
+    "P_summed_AL_control_minus_baseline_10000.csv"
 )
 
-output_folder = os.path.join(OCHRE_WORKING_DIR, "N_10000", "images")
-os.makedirs(output_folder, exist_ok=True)
+input_baseline_mean_csv = os.path.join(
+    OCHRE_WORKING_DIR,
+    "N_10000",
+    "summed_power_by_time_baseline.csv"
+)
 
-df = pd.read_csv(input_csv)
-y = df["P_mean"].values
+# Load Dataframes
+df_delta = pd.read_csv(input_delta_csv)
+df_base = pd.read_csv(input_baseline_mean_csv)
 
-dt_hours = 0.25  # 15-min interval
+# Convert time (NOW handles full datetime)
+for df in [df_delta, df_base]:
+    df['time_dt'] = pd.to_datetime(df['time'])  # <-- FIXED
+    df['hours'] = (
+        df['time_dt'].dt.hour +
+        df['time_dt'].dt.minute / 60.0
+    )
 
-# ---------------------------
-# ENERGY FUNCTION (TRAPZ ONLY)
-# ---------------------------
-def compute_energy(y_seg):
-    pos = np.trapz(np.maximum(y_seg, 0), dx=dt_hours)
-    neg = np.trapz(np.minimum(y_seg, 0), dx=dt_hours)
-    net = pos + neg
-    avg = np.mean(y_seg)
-    return pos, neg, net, avg
+def get_window_energy_total(df, column, start_h, end_h):
+    mask = (df['hours'] >= start_h) & (df['hours'] <= end_h)
+    window_df = df[mask].sort_values('hours')
+    if window_df.empty:
+        return 0
+    return np.trapz(window_df[column].values, window_df['hours'].values)
 
-# ---------------------------
-# TIME → INDEX
-# ---------------------------
-def time_to_index(t):
-    h, m = map(int, t.split(":"))
-    return int((h * 60 + m) / 15)
-
-# ---------------------------
-# WINDOWS
-# ---------------------------
-schedule = [
-    ("Morning LU", '03:00', 3),
-    ("Morning Shed", '06:00', 4),
-    ("Evening LU", '16:00', 1),
-    ("Evening Shed", '17:00', 3),
+# Define Windows
+windows = [
+    ("Morning Load Up", 3, 5),
+    ("Morning Shed", 6, 10),
+    ("Afternoon Load Up", 16, 17),
+    ("Afternoon Shed", 17, 20)
 ]
 
-rows = []
+results = []
 
-for name, t, dur in schedule:
-    start = time_to_index(t)
-    end = start + dur * 4
+for label, start, end in windows:
+    # Delta (Control - Baseline)
+    e_delta = get_window_energy_total(df_delta, 'P_mean', start, end)
+    e_bestcase = get_window_energy_total(df_delta, 'best_case', start, end)
+    e_worstcase = get_window_energy_total(df_delta, 'worst_case', start, end)
+    
+    # Baseline (MAKE SURE THESE MATCH YOUR CSV COLUMN NAMES)
+    e_base_total = get_window_energy_total(df_base, 'total_power_MW', start, end)
+    e_base_5th = get_window_energy_total(df_base, '5th_percentile', start, end)
+    e_base_95th = get_window_energy_total(df_base, '95th_percentile', start, end)
+    
+    # Percent reduction (Baseline - Control) / Baseline
+    percent_reduction_mean = (e_delta / e_base_total) * 100 if e_base_total != 0 else 0
 
-    y_seg = y[start:end]
-    pos, neg, net, avg = compute_energy(y_seg)
-
-    rows.append({
-        "Event": name,
-        "Duration (hr)": dur,
-        "Positive Energy": pos,
-        "Negative Energy": neg,
-        "Net Energy": net,
-        "Avg Power (p.u.)": avg
+    results.append({
+        "Event": label,
+        "Time Range": f"{int(start):02d}:00 - {int(end):02d}:00",
+        "Energy Impact (MWh)": round(e_delta, 2),
+        "Baseline Energy (MWh)": round(e_base_total, 2),
+        "Best Case Energy (MWh)": round(e_bestcase, 2),
+        "Worst Case Energy (MWh)": round(e_worstcase, 2),
+        "Percent Load Reduction (Mean)": f"{round(percent_reduction_mean, 2)}%"
     })
 
-# ---------------------------
-# TOTAL (TRAPZ)
-# ---------------------------
-total_pos = np.trapz(np.maximum(y, 0), dx=dt_hours)
-total_neg = np.trapz(np.minimum(y, 0), dx=dt_hours)
-total_net = total_pos + total_neg
+final_table = pd.DataFrame(results)
 
-rows.append({
-    "Event": "TOTAL",
-    "Duration (hr)": len(y) * dt_hours,
-    "Positive Energy": total_pos,
-    "Negative Energy": total_neg,
-    "Net Energy": total_net,
-    "Avg Power (p.u.)": np.mean(y)
-})
-
-# ---------------------------
-# SAVE
-# ---------------------------
-energy_df = pd.DataFrame(rows)
-
-output_csv = os.path.join(output_folder, "PU_energy_summary.csv")
-energy_df.to_csv(output_csv, index=False)
-
-print("\nEnergy Summary Table:\n")
-print(energy_df)
-print(f"\nSaved to: {output_csv}")
+print(final_table)

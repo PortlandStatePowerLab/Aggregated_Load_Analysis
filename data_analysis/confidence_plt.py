@@ -13,13 +13,13 @@ OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
 input_csv = os.path.join(
     OCHRE_WORKING_DIR,
     "N_10000",
-    "P_mean_PU_control_minus_baseline_10000.csv"
+    "P_summed_AL_control_minus_baseline_10000.csv"
 )
 
 output_folder = os.path.join(OCHRE_WORKING_DIR, "N_10000", "images")
 os.makedirs(output_folder, exist_ok=True)
 
-output_name = os.path.join(output_folder, "FINAL_with_all_areas.png")
+output_name = os.path.join(output_folder, "FINAL_with_all_areas_AL_summed.png")
 
 # ---------------------------
 # LOAD DATA
@@ -54,8 +54,8 @@ ax.plot(x, y_mean,  color="black", linewidth=2, label="Mean")
 ax.plot(x, y_best,  linestyle="--", color="orange", label="Best Case")
 ax.plot(x, y_worst, linestyle="--", color="blue", label="Worst Case")
 
-ax.set_title("Per Unit Control Minus Baseline (10,000 Units)")
-ax.set_ylabel("Power [p.u.]")
+ax.set_title("Aggregated Load Shifting Control Minus Baseline (10,000 Units)")
+ax.set_ylabel("Power [MW]")
 ax.grid(True)
 
 # ---------------------------
