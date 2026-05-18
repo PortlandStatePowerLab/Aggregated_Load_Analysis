@@ -53,7 +53,7 @@ for label, start, end in windows:
     e_worstcase = get_window_energy_total(df_delta, 'worst_case', start, end)
     
     # Baseline (MAKE SURE THESE MATCH YOUR CSV COLUMN NAMES)
-    e_base_total = get_window_energy_total(df_base, 'total_power_MW', start, end)
+    e_base_total = get_window_energy_total(df_base, 'total_power_kW', start, end)
     e_base_5th = get_window_energy_total(df_base, '5th_percentile', start, end)
     e_base_95th = get_window_energy_total(df_base, '95th_percentile', start, end)
     
@@ -63,10 +63,10 @@ for label, start, end in windows:
     results.append({
         "Event": label,
         "Time Range": f"{int(start):02d}:00 - {int(end):02d}:00",
-        "Energy Impact (MWh)": round(e_delta, 2),
-        "Baseline Energy (MWh)": round(e_base_total, 2),
-        "Best Case Energy (MWh)": round(e_bestcase, 2),
-        "Worst Case Energy (MWh)": round(e_worstcase, 2),
+        "Energy Impact (kWh)": round(e_delta, 2),
+        "Baseline Energy (kWh)": round(e_base_total, 2),
+        "Best Case Energy (kWh)": round(e_bestcase, 2),
+        "Worst Case Energy (kWh)": round(e_worstcase, 2),
         "Percent Load Reduction (Mean)": f"{round(percent_reduction_mean, 2)}%"
     })
 

@@ -55,7 +55,7 @@ ax.plot(x, y_best,  linestyle="--", color="orange", label="Best Case")
 ax.plot(x, y_worst, linestyle="--", color="blue", label="Worst Case")
 
 ax.set_title("Aggregated Load Shifting Control Minus Baseline (10,000 Units)")
-ax.set_ylabel("Power [MW]")
+ax.set_ylabel("Power [kW]")
 ax.grid(True)
 
 # ---------------------------
