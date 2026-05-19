@@ -10,13 +10,13 @@ OCHRE_WORKING_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ochre_working")
 
 base_dir = os.path.join(OCHRE_WORKING_DIR, "N_10000")
 
-baseline_csv = os.path.join(base_dir, "P_Mean_baseline_AL_10000.csv")
-controlled_csv = os.path.join(base_dir, "P_Mean_controlled_AL_10000.csv")
+baseline_csv = os.path.join(base_dir, "summed_power_by_time_baseline.csv")
+controlled_csv = os.path.join(base_dir, "summed_power_by_time_controlled.csv")
 
 output_folder = os.path.join(base_dir, "images")
 os.makedirs(output_folder, exist_ok=True)
 
-output_name = os.path.join(output_folder, "AL_baseline_control_CI_schedule.png")
+output_name = os.path.join(output_folder, "AL_baseline_control_CI.png")
 
 # ---------------------------
 # LOAD DATA
@@ -33,13 +33,13 @@ df_ctrl["time"] = df_ctrl["time"].astype(str)
 df = pd.DataFrame()
 df["time"] = df_base["time"]
 
-df["baseline_mean"] = df_base["P_mean_kW"]
-df["baseline_5th"] = df_base["5th"]
-df["baseline_95th"] = df_base["95th"]
+df["baseline_mean"] = df_base["total_power_kW"]
+df["baseline_5th"] = df_base["5th_percentile"]
+df["baseline_95th"] = df_base["95th_percentile"]
 
-df["ctrl_mean"] = df_ctrl["P_mean_kW"]
-df["ctrl_5th"] = df_ctrl["5th"]
-df["ctrl_95th"] = df_ctrl["95th"]
+df["ctrl_mean"] = df_ctrl["total_power_kW"]
+df["ctrl_5th"] = df_ctrl["5th_percentile"]
+df["ctrl_95th"] = df_ctrl["95th_percentile"]
 
 # ---------------------------
 # SCHEDULE
@@ -60,13 +60,19 @@ def time_to_index(time_str):
     return int((h * 60 + m) / 15)
 
 # ---------------------------
-# PLOT
+# FIGURE (2 PANELS)
 # ---------------------------
-plt.figure(figsize=(12, 6))
-ax = plt.gca()
+fig, (ax, ax2) = plt.subplots(
+    2, 1,
+    figsize=(12, 6),
+    gridspec_kw={'height_ratios': [5, 1]},
+    sharex=True
+)
+
+plt.subplots_adjust(hspace=0.05)
 
 # ---------------------------
-# CI BANDS
+# CI BANDS (ON MAIN AXIS)
 # ---------------------------
 ax.fill_between(
     range(len(df)),
@@ -87,54 +93,65 @@ ax.fill_between(
 )
 
 # ---------------------------
-# MEAN LINES
+# MEAN LINES (ON MAIN AXIS)
 # ---------------------------
 ax.plot(df["baseline_mean"], label="Baseline Mean", linewidth=2, color='blue')
 ax.plot(df["ctrl_mean"], label="Controlled Mean", linewidth=2, color='magenta')
 
 # ---------------------------
-# SCHEDULE SHADING
+# LABELS & GRID
 # ---------------------------
-
-# LOAD UP (GREEN)
-lu_start = time_to_index(my_schedule['M_LU_time'])
-lu_end = lu_start + my_schedule['M_LU_duration'] * 4
-ax.axvspan(lu_start, lu_end, color='green', alpha=0.15, label="Load Up")
-
-elu_start = time_to_index(my_schedule['E_ALU_time'])
-elu_end = elu_start + my_schedule['E_ALU_duration'] * 4
-ax.axvspan(elu_start, elu_end, color='green', alpha=0.15)
-
-# SHED (YELLOW)
-s1_start = time_to_index(my_schedule['M_S_time'])
-s1_end = s1_start + my_schedule['M_S_duration'] * 4
-ax.axvspan(s1_start, s1_end, color='yellow', alpha=0.2, label="Shed")
-
-s2_start = time_to_index(my_schedule['E_S_time'])
-s2_end = s2_start + my_schedule['E_S_duration'] * 4
-ax.axvspan(s2_start, s2_end, color='yellow', alpha=0.2)
+ax.set_ylabel("Power [kW]")
+ax.set_title("Aggregated Baseline vs Controlled Confidence Intervals (10,000 Units) ")
+ax.grid(True)
+ax.legend()
 
 # ---------------------------
-# LABELS
-# ---------------------------
-plt.xlabel("Time")
-plt.ylabel("Power [kW]")
-plt.title("Aggregated Baseline vs Controlled CI (10,000 Units) ")
-plt.grid(True)
-plt.legend()
-
-# ---------------------------
-# X AXIS
+# X AXIS / TIME LABELS
 # ---------------------------
 tick_positions = range(0, len(df), 4)
-plt.xticks(
-    ticks=tick_positions,
-    labels=[f"{i//4:02d}:00" for i in tick_positions],
+ax.set_xticks(tick_positions)
+ax.set_xticklabels(
+    [f"{i//4:02d}:00" for i in tick_positions],
     rotation=45
 )
+ax.tick_params(labelbottom=True)
 
+# ---------------------------
+# EVENT BAR (BELOW TIME)
+# ---------------------------
+ax2.set_ylim(0, 1)
+ax2.set_yticks([])
+ax2.set_frame_on(False)
+
+schedule = [
+    ("LOADUP", my_schedule['M_LU_time'], my_schedule['M_LU_duration'], "green"),
+    ("SHED",    my_schedule['M_S_time'],  my_schedule['M_S_duration'],  "yellow"),
+    ("LOADUP", my_schedule['E_ALU_time'], my_schedule['E_ALU_duration'], "green"),
+    ("SHED",    my_schedule['E_S_time'],  my_schedule['E_S_duration'],  "yellow"),
+]
+
+for name, t, dur, color in schedule:
+    start = time_to_index(t)
+    end = start + dur * 4
+
+    ax2.fill_between([start, end], 0, 1, color=color, alpha=0.6)
+
+    ax2.text(
+        (start + end) / 2,
+        0.5,
+        name,
+        ha="center",
+        va="center",
+        fontsize=8
+    )
+
+# ---------------------------
+# SAVE
+# ---------------------------
+ax2.xaxis.set_visible(False)
 plt.tight_layout()
-plt.savefig(output_name, dpi=300)
+plt.savefig(output_name, dpi=300, bbox_inches="tight")
 plt.close()
 
 print(f"Saved plot to: {output_name}")
